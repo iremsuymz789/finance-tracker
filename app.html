@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root{
     --bg: #0F1512;
@@ -160,6 +161,49 @@
   .flow-row.total .flow-label{ color: var(--ink); font-weight: 600; }
   .flow-row.total .flow-val{ font-size: 19px; font-weight: 600; }
 
+  /* ---------- Trend panel ---------- */
+  .trend-panel{ margin-bottom: 40px; }
+  .trend-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .trend-stats{ display:flex; gap: 28px; }
+  .trend-stat .t-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 4px;
+  }
+  .trend-stat .t-val{ font-size: 16px; font-weight: 600; }
+  .trend-stat .t-val.burn{ color: var(--expense); }
+  .trend-stat .t-val.recover{ color: var(--income); }
+  .balance-setting{
+    display:flex; align-items:center; gap: 8px;
+    font-size: 12.5px; color: var(--ink-dim);
+  }
+  .balance-setting input{
+    width: 110px;
+    padding: 6px 8px;
+    font-size: 12.5px;
+  }
+  .balance-setting button{
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 3px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .balance-setting button:hover{ border-color: var(--savings); }
+  .chart-wrap{ height: 260px; position: relative; }
+
   /* ---------- Comparison table ---------- */
   table{ width: 100%; border-collapse: collapse; font-size: 13.5px; }
   th{
@@ -282,6 +326,33 @@
     </div>
   </div>
 
+  <!-- Daily balance trend -->
+  <div class="panel trend-panel">
+    <div class="trend-head">
+      <div>
+        <h2 style="margin-bottom: 10px;">Daily Balance Trend</h2>
+        <div class="trend-stats">
+          <div class="trend-stat">
+            <p class="t-label">Avg. Daily Change</p>
+            <p class="t-val num" id="trendAvgChange">$0.00</p>
+          </div>
+          <div class="trend-stat">
+            <p class="t-label">Burn Rate Outlook</p>
+            <p class="t-val" id="trendOutlook">—</p>
+          </div>
+        </div>
+      </div>
+      <div class="balance-setting">
+        <span>Starting balance:</span>
+        <input type="number" id="openingBalanceInput" step="0.01" placeholder="0.00">
+        <button id="saveOpeningBalance">Save</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="balanceTrendChart"></canvas>
+    </div>
+  </div>
+
   <div class="grid-2">
     <!-- Cash flow waterfall -->
     <div class="panel">
@@ -388,6 +459,8 @@
 
   let currentUser = null;
   let allPeriods = []; // list of {value: "2026-08", label: "August 2026"}
+  let openingBalance = 0;
+  let trendChart = null;
 
   const fmt = (n) => {
     const sign = n < 0 ? "-" : "";
@@ -418,7 +491,32 @@
     });
 
     document.getElementById("txForm").addEventListener("submit", addTransaction);
+    document.getElementById("saveOpeningBalance").addEventListener("click", saveOpeningBalance);
 
+    await loadOpeningBalance();
+    loadDashboard();
+  }
+
+  // ---------- Starting balance ----------
+  async function loadOpeningBalance() {
+    const { data, error } = await supabaseClient
+      .from("user_settings")
+      .select("opening_balance")
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+    if (error) { console.error(error); return; }
+    openingBalance = data ? Number(data.opening_balance) : 0;
+    document.getElementById("openingBalanceInput").value = openingBalance.toFixed(2);
+  }
+
+  async function saveOpeningBalance() {
+    const input = document.getElementById("openingBalanceInput");
+    const value = parseFloat(input.value) || 0;
+    const { error } = await supabaseClient
+      .from("user_settings")
+      .upsert({ user_id: currentUser.id, opening_balance: value, updated_at: new Date().toISOString() });
+    if (error) { alert(error.message); return; }
+    openingBalance = value;
     loadDashboard();
   }
 
@@ -474,6 +572,120 @@
       .order("transaction_date", { ascending: false });
     if (error) { console.error(error); return []; }
     return data;
+  }
+
+  function netOf(transactions) {
+    return transactions.reduce((total, t) => {
+      const amt = Number(t.amount);
+      if (t.type === "income") return total + amt;
+      return total - amt; // expense, savings, debt all reduce balance
+    }, 0);
+  }
+
+  async function fetchTransactionsBefore(dateISO) {
+    const { data, error } = await supabaseClient
+      .from("transactions")
+      .select("type, amount, transaction_date")
+      .lt("transaction_date", dateISO);
+    if (error) { console.error(error); return []; }
+    return data;
+  }
+
+  async function renderBalanceTrend(period, currentMonthTx) {
+    const { start } = monthBounds(period);
+    const [year, month] = period.split("-").map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const now = new Date();
+    const isCurrentPeriod = now.getFullYear() === year && (now.getMonth() + 1) === month;
+    const daysToPlot = isCurrentPeriod ? now.getDate() : daysInMonth;
+
+    const priorTx = await fetchTransactionsBefore(start);
+    const startingBalanceForMonth = openingBalance + netOf(priorTx);
+
+    // Bucket this month's transactions by day-of-month
+    const dailyNet = new Array(daysInMonth + 1).fill(0);
+    currentMonthTx.forEach(t => {
+      const day = Number(t.transaction_date.split("-")[2]);
+      const amt = Number(t.amount);
+      dailyNet[day] += (t.type === "income") ? amt : -amt;
+    });
+
+    const labels = [];
+    const balances = [];
+    let running = startingBalanceForMonth;
+    for (let d = 1; d <= daysToPlot; d++) {
+      running += dailyNet[d];
+      labels.push(d);
+      balances.push(Number(running.toFixed(2)));
+    }
+
+    // Burn rate stats
+    const totalChange = balances.length ? balances[balances.length - 1] - startingBalanceForMonth : 0;
+    const avgDaily = balances.length ? totalChange / balances.length : 0;
+    document.getElementById("trendAvgChange").textContent = (avgDaily >= 0 ? "+" : "-") + fmt(Math.abs(avgDaily));
+
+    const outlookEl = document.getElementById("trendOutlook");
+    const currentBalance = balances.length ? balances[balances.length - 1] : startingBalanceForMonth;
+    if (avgDaily < 0 && currentBalance > 0) {
+      const daysLeft = Math.floor(currentBalance / Math.abs(avgDaily));
+      outlookEl.textContent = `~${daysLeft} days to $0 at this rate`;
+      outlookEl.className = "t-val burn";
+    } else if (avgDaily >= 0) {
+      outlookEl.textContent = "Trending upward";
+      outlookEl.className = "t-val recover";
+    } else {
+      outlookEl.textContent = "Balance already at $0 or below";
+      outlookEl.className = "t-val burn";
+    }
+
+    const ctx = document.getElementById("balanceTrendChart").getContext("2d");
+    const lineColor = totalChange >= 0 ? "#8FBF6F" : "#D64933";
+
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Balance",
+          data: balances,
+          borderColor: lineColor,
+          backgroundColor: lineColor + "22",
+          fill: true,
+          tension: 0.25,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => `Day ${items[0].label}`,
+              label: (item) => fmt(item.parsed.y)
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: "rgba(237,232,222,0.06)" },
+            ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 } }
+          },
+          y: {
+            grid: { color: "rgba(237,232,222,0.06)" },
+            ticks: {
+              color: "#6C766E",
+              font: { family: "IBM Plex Mono", size: 10 },
+              callback: (val) => "$" + val.toLocaleString()
+            }
+          }
+        }
+      }
+    });
   }
 
   function summarize(transactions) {
@@ -542,6 +754,9 @@
 
     // Recent transactions (current period, capped at 12)
     renderTxList(current.slice(0, 12));
+
+    // Daily balance trend
+    renderBalanceTrend(period, current);
   }
 
   function renderTxList(transactions) {
