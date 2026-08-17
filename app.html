@@ -204,6 +204,27 @@
   .balance-setting button:hover{ border-color: var(--savings); }
   .chart-wrap{ height: 260px; position: relative; }
 
+  /* ---------- Expense breakdown ---------- */
+  .breakdown-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: center;
+  }
+  .breakdown-chart{ height: 240px; position: relative; }
+  .breakdown-legend{ display:flex; flex-direction: column; gap: 10px; }
+  .legend-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    font-size: 13.5px;
+  }
+  .legend-left{ display:flex; align-items:center; gap: 9px; }
+  .legend-dot{ width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .legend-cat{ color: var(--ink); }
+  .legend-pct{ color: var(--ink-faint); font-size: 12px; margin-left: 6px; }
+  .legend-amt{ font-size: 13.5px; }
+
   /* ---------- Comparison table ---------- */
   table{ width: 100%; border-collapse: collapse; font-size: 13.5px; }
   th{
@@ -288,6 +309,7 @@
   @media (max-width: 800px){
     .banner{ grid-template-columns: 1fr 1fr; }
     .grid-2{ grid-template-columns: 1fr; }
+    .breakdown-grid{ grid-template-columns: 1fr; }
     main{ padding: 28px 20px 60px; }
     header{ padding: 16px 20px; }
   }
@@ -404,6 +426,20 @@
     </div>
   </div>
 
+  <!-- Expense breakdown -->
+  <div class="panel" style="margin-bottom: 40px;">
+    <h2>Expense Breakdown</h2>
+    <div class="breakdown-grid" id="breakdownGrid">
+      <div class="breakdown-chart">
+        <canvas id="expenseDonutChart"></canvas>
+      </div>
+      <div class="breakdown-legend" id="breakdownLegend"></div>
+    </div>
+    <div class="chart-wrap" style="height: 220px; margin-top: 28px;">
+      <canvas id="expenseBarChart"></canvas>
+    </div>
+  </div>
+
   <!-- Add transaction -->
   <div class="panel">
     <h2>Add a Transaction</h2>
@@ -467,6 +503,16 @@
   const DEBT_CATEGORIES = ["Credit Card", "Loan Payment", "Other Debt"];
   const CURRENCIES = ["USD", "EUR", "GBP", "TRY", "JPY", "CAD", "AUD", "INR"];
   const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£", TRY: "₺", JPY: "¥", CAD: "$", AUD: "$", INR: "₹" };
+  const CATEGORY_COLORS = {
+    Housing: "#D98E51",
+    Transport: "#6FA8BF",
+    Food: "#BF6F8F",
+    Leisure: "#A88FBF",
+    Healthcare: "#6FBF9E",
+    Shopping: "#BFA76F",
+    Education: "#6F8FBF",
+    Miscellaneous: "#8A8F87"
+  };
 
   let currentUser = null;
   let allPeriods = []; // list of {value: "2026-08", label: "August 2026"}
@@ -475,6 +521,8 @@
   let exchangeRates = {}; // { EUR: 0.92, TRY: 34.5, ... } meaning 1 baseCurrency = rate[X] of currency X
   let ratesLoadFailed = false;
   let trendChart = null;
+  let donutChart = null;
+  let barChart = null;
 
   const fmt = (n) => {
     const sign = n < 0 ? "-" : "";
@@ -762,6 +810,97 @@
     });
   }
 
+  function renderExpenseBreakdown(transactions) {
+    const expenses = transactions.filter(t => t.type === "expense");
+    const totals = {};
+    EXPENSE_CATEGORIES.forEach(c => totals[c] = 0);
+    expenses.forEach(t => {
+      const amt = toBase(Number(t.amount), t.currency || "USD");
+      totals[t.category] = (totals[t.category] || 0) + amt;
+    });
+
+    const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+    const donutCanvas = document.getElementById("expenseDonutChart");
+    const barCanvas = document.getElementById("expenseBarChart");
+    const legend = document.getElementById("breakdownLegend");
+
+    if (grandTotal === 0) {
+      if (donutChart) { donutChart.destroy(); donutChart = null; }
+      if (barChart) { barChart.destroy(); barChart = null; }
+      legend.innerHTML = '<p class="empty-state" style="padding: 0;">No expenses logged yet for this period.</p>';
+      return;
+    }
+
+    // Sort categories by amount, descending, drop zero-value ones
+    const sorted = EXPENSE_CATEGORIES
+      .map(c => ({ category: c, amount: totals[c] }))
+      .filter(c => c.amount > 0)
+      .sort((a, b) => b.amount - a.amount);
+
+    const labels = sorted.map(c => c.category);
+    const values = sorted.map(c => Number(c.amount.toFixed(2)));
+    const colors = sorted.map(c => CATEGORY_COLORS[c.category]);
+
+    // Legend
+    legend.innerHTML = "";
+    sorted.forEach(c => {
+      const pct = ((c.amount / grandTotal) * 100).toFixed(0);
+      const row = document.createElement("div");
+      row.className = "legend-row";
+      row.innerHTML = `
+        <div class="legend-left">
+          <span class="legend-dot" style="background:${CATEGORY_COLORS[c.category]};"></span>
+          <span class="legend-cat">${c.category}</span>
+          <span class="legend-pct">${pct}%</span>
+        </div>
+        <span class="legend-amt num">${fmt(c.amount)}</span>
+      `;
+      legend.appendChild(row);
+    });
+
+    // Donut chart
+    if (donutChart) donutChart.destroy();
+    donutChart = new Chart(donutCanvas.getContext("2d"), {
+      type: "doughnut",
+      data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "#16211C", borderWidth: 2 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "68%",
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } }
+        }
+      }
+    });
+
+    // Horizontal bar chart
+    if (barChart) barChart.destroy();
+    barChart = new Chart(barCanvas.getContext("2d"), {
+      type: "bar",
+      data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 3, barThickness: 16 }] },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (item) => fmt(item.parsed.x) } }
+        },
+        scales: {
+          x: {
+            grid: { color: "rgba(237,232,222,0.06)" },
+            ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: "#9CA89E", font: { family: "IBM Plex Sans", size: 12.5 } }
+          }
+        }
+      }
+    });
+  }
+
   function summarize(transactions) {
     const sum = (arr) => arr.reduce((a, t) => a + toBase(Number(t.amount), t.currency || "USD"), 0);
     const income = sum(transactions.filter(t => t.type === "income"));
@@ -831,6 +970,9 @@
 
     // Daily balance trend
     renderBalanceTrend(period, current);
+
+    // Expense breakdown
+    renderExpenseBreakdown(current);
   }
 
   function renderTxList(transactions) {
