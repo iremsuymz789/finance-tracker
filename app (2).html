@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #0F1512;
+    --surface: #16211C;
+    --surface-2: #1D2A23;
+    --ink: #EDE8DE;
+    --ink-dim: #9CA89E;
+    --ink-faint: #6C766E;
+    --income: #8FBF6F;
+    --expense: #D64933;
+    --savings: #E8B84B;
+    --debt: #C97B84;
+    --line: rgba(237,232,222,0.12);
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+  }
+  .num{ font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+  }
+  .brand span{ color: var(--savings); }
+  .header-right{ display:flex; align-items:center; gap: 18px; }
+  select, .period-select{
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+  .logout-btn{
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+    border-radius: 3px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .logout-btn:hover{ color: var(--ink); border-color: var(--ink-dim); }
+
+  main{ max-width: 1100px; margin: 0 auto; padding: 36px 40px 80px; }
+
+  .section-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 14px;
+  }
+
+  /* ---------- Top banner ---------- */
+  .banner{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .banner-cell{
+    background: var(--surface);
+    padding: 22px 24px;
+    position: relative;
+  }
+  .banner-cell .label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin: 0 0 10px;
+  }
+  .banner-cell .value{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+  }
+  .banner-cell.income .value{ color: var(--income); }
+  .banner-cell.expense .value{ color: var(--expense); }
+  .banner-cell.savings .value{ color: var(--savings); }
+  .banner-cell.balance .value{ color: var(--ink); }
+  .banner-cell.balance{ background: var(--surface-2); }
+  .banner-cell .sub{ font-size: 12px; color: var(--ink-faint); margin-top: 6px; }
+
+  /* ---------- Two-column layout ---------- */
+  .grid-2{
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+    align-items: start;
+  }
+  .panel{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 24px 26px;
+  }
+  .panel h2{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 17px;
+    margin: 0 0 20px;
+  }
+
+  /* ---------- Cash flow waterfall ---------- */
+  .flow-row{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 14px;
+  }
+  .flow-row:last-of-type{ border-bottom: none; }
+  .flow-row .flow-label{ color: var(--ink-dim); }
+  .flow-row .flow-val{ font-size: 14px; }
+  .flow-row.add .flow-val{ color: var(--income); }
+  .flow-row.sub .flow-val{ color: var(--expense); }
+  .flow-row.total{
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    border-bottom: none;
+  }
+  .flow-row.total .flow-label{ color: var(--ink); font-weight: 600; }
+  .flow-row.total .flow-val{ font-size: 19px; font-weight: 600; }
+
+  /* ---------- Comparison table ---------- */
+  table{ width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th{
+    text-align: right;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  th:first-child, td:first-child{ text-align: left; }
+  td{ text-align: right; padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--ink); }
+  tr:last-child td{ border-bottom: none; }
+  .variance-up{ color: var(--income); }
+  .variance-down{ color: var(--expense); }
+
+  /* ---------- Form ---------- */
+  .form-row{ display: flex; gap: 10px; margin-bottom: 12px; }
+  .form-row > div{ flex: 1; }
+  label{ display:block; font-size: 12px; color: var(--ink-dim); margin-bottom: 5px; }
+  input, select{
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 9px 10px;
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+  input:focus, select:focus{ outline: none; border-color: var(--savings); }
+  .checkbox-row{ display:flex; align-items:center; gap: 8px; margin: 4px 0 16px; }
+  .checkbox-row input{ width: auto; }
+  .checkbox-row label{ margin: 0; color: var(--ink-dim); font-size: 13px; }
+  .submit-btn{
+    width: 100%;
+    background: var(--savings);
+    color: #16210F;
+    border: none;
+    border-radius: 3px;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .submit-btn:hover{ opacity: 0.88; }
+  .form-msg{ font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+  .form-msg.error{ color: var(--expense); }
+  .form-msg.ok{ color: var(--income); }
+
+  /* ---------- Recent transactions ---------- */
+  .tx-list{ margin-top: 40px; }
+  .tx-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .tx-left{ display:flex; align-items:center; gap: 12px; }
+  .tx-dot{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .tx-dot.income{ background: var(--income); }
+  .tx-dot.expense{ background: var(--expense); }
+  .tx-dot.savings{ background: var(--savings); }
+  .tx-dot.debt{ background: var(--debt); }
+  .tx-cat{ color: var(--ink); }
+  .tx-date{ color: var(--ink-faint); font-size: 12px; margin-left: 8px; }
+  .tx-desc{ color: var(--ink-faint); font-size: 12.5px; margin-top: 2px; }
+  .tx-amt{ font-size: 14px; }
+  .tx-del{
+    background: none; border: none; color: var(--ink-faint);
+    cursor: pointer; font-size: 12px; margin-left: 14px;
+  }
+  .tx-del:hover{ color: var(--expense); }
+  .empty-state{ color: var(--ink-faint); font-size: 13.5px; padding: 20px 0; text-align: center; }
+
+  @media (max-width: 800px){
+    .banner{ grid-template-columns: 1fr 1fr; }
+    .grid-2{ grid-template-columns: 1fr; }
+    main{ padding: 28px 20px 60px; }
+    header{ padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Ledger<span>.</span></div>
+  <div class="header-right">
+    <select id="periodSelect" class="period-select"></select>
+    <button class="logout-btn" id="logoutBtn">Log out</button>
+  </div>
+</header>
+
+<main>
+  <p class="section-label" id="periodLabel">This Month</p>
+
+  <!-- Top banner -->
+  <div class="banner">
+    <div class="banner-cell income">
+      <p class="label">Total Income</p>
+      <p class="value num" id="bannerIncome">$0.00</p>
+    </div>
+    <div class="banner-cell expense">
+      <p class="label">Total Expenses</p>
+      <p class="value num" id="bannerExpense">$0.00</p>
+    </div>
+    <div class="banner-cell savings">
+      <p class="label">Savings &amp; Investments</p>
+      <p class="value num" id="bannerSavings">$0.00</p>
+    </div>
+    <div class="banner-cell balance">
+      <p class="label">Remaining Balance</p>
+      <p class="value num" id="bannerBalance">$0.00</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Cash flow waterfall -->
+    <div class="panel">
+      <h2>Cash Flow Breakdown</h2>
+      <div class="flow-row">
+        <span class="flow-label">Incoming Revenue</span>
+        <span class="flow-val num" id="flowIncome">$0.00</span>
+      </div>
+      <div class="flow-row sub">
+        <span class="flow-label">− Variable Expenses</span>
+        <span class="flow-val num" id="flowVariable">$0.00</span>
+      </div>
+      <div class="flow-row sub">
+        <span class="flow-label">− Fixed Expenses</span>
+        <span class="flow-val num" id="flowFixed">$0.00</span>
+      </div>
+      <div class="flow-row sub">
+        <span class="flow-label">− Debt Obligations</span>
+        <span class="flow-val num" id="flowDebt">$0.00</span>
+      </div>
+      <div class="flow-row sub">
+        <span class="flow-label">− Allocated Savings &amp; Investments</span>
+        <span class="flow-val num" id="flowSavings">$0.00</span>
+      </div>
+      <div class="flow-row total">
+        <span class="flow-label">Net Remaining</span>
+        <span class="flow-val num" id="flowNet">$0.00</span>
+      </div>
+    </div>
+
+    <!-- Monthly comparison -->
+    <div class="panel">
+      <h2>This Month vs. Last Month</h2>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>This Month</th><th>Last Month</th><th>Change</th></tr>
+        </thead>
+        <tbody id="comparisonBody">
+        </tbody>
+      </table>
+      <p style="font-size:11.5px; color: var(--ink-faint); margin: 16px 0 0;">
+        Budgeted-vs-actual comparison is coming once we add a budgets feature — for now this compares actuals month over month.
+      </p>
+    </div>
+  </div>
+
+  <!-- Add transaction -->
+  <div class="panel">
+    <h2>Add a Transaction</h2>
+    <form id="txForm">
+      <div class="form-row">
+        <div>
+          <label for="txType">Type</label>
+          <select id="txType" required>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+            <option value="savings">Savings / Investment</option>
+            <option value="debt">Debt Payment</option>
+          </select>
+        </div>
+        <div>
+          <label for="txCategory">Category</label>
+          <select id="txCategory" required></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="txAmount">Amount</label>
+          <input type="number" id="txAmount" min="0" step="0.01" placeholder="0.00" required>
+        </div>
+        <div>
+          <label for="txDate">Date</label>
+          <input type="date" id="txDate" required>
+        </div>
+      </div>
+      <div class="checkbox-row" id="fixedRow">
+        <input type="checkbox" id="txFixed">
+        <label for="txFixed">This is a fixed / recurring cost</label>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="txDesc">Description (optional)</label>
+          <input type="text" id="txDesc" placeholder="e.g. Rent, YouTube ad revenue…">
+        </div>
+      </div>
+      <button type="submit" class="submit-btn">Add transaction</button>
+      <p class="form-msg" id="formMsg"></p>
+    </form>
+  </div>
+
+  <!-- Recent transactions -->
+  <div class="tx-list">
+    <p class="section-label">Recent Transactions</p>
+    <div id="txListBody"></div>
+  </div>
+</main>
+
+<script src="supabaseClient.js"></script>
+<script>
+  const EXPENSE_CATEGORIES = ["Housing", "Transport", "Food", "Leisure", "Healthcare", "Shopping", "Education", "Miscellaneous"];
+  const INCOME_CATEGORIES = ["Sponsorship", "Ad Revenue", "Affiliate", "Product Sales", "Freelance", "Other Income"];
+  const SAVINGS_CATEGORIES = ["Emergency Fund", "Investment", "Travel Fund", "Retirement", "Other Savings"];
+  const DEBT_CATEGORIES = ["Credit Card", "Loan Payment", "Other Debt"];
+
+  let currentUser = null;
+  let allPeriods = []; // list of {value: "2026-08", label: "August 2026"}
+
+  const fmt = (n) => {
+    const sign = n < 0 ? "-" : "";
+    return sign + "$" + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  // ---------- Auth guard ----------
+  async function init() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) { window.location.href = "auth.html"; return; }
+    currentUser = session.user;
+
+    buildPeriodOptions();
+    populateCategoryOptions();
+    document.getElementById("txDate").valueAsDate = new Date();
+
+    document.getElementById("periodSelect").addEventListener("change", loadDashboard);
+    document.getElementById("txType").addEventListener("change", () => {
+      populateCategoryOptions();
+      document.getElementById("fixedRow").style.display =
+        document.getElementById("txType").value === "expense" ? "flex" : "none";
+    });
+    document.getElementById("fixedRow").style.display = "flex";
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabaseClient.auth.signOut();
+      window.location.href = "auth.html";
+    });
+
+    document.getElementById("txForm").addEventListener("submit", addTransaction);
+
+    loadDashboard();
+  }
+
+  function buildPeriodOptions() {
+    const select = document.getElementById("periodSelect");
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleString("en-US", { month: "long", year: "numeric" });
+      allPeriods.push({ value, label });
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      select.appendChild(opt);
+    }
+  }
+
+  function populateCategoryOptions() {
+    const type = document.getElementById("txType").value;
+    const catSelect = document.getElementById("txCategory");
+    const map = { income: INCOME_CATEGORIES, expense: EXPENSE_CATEGORIES, savings: SAVINGS_CATEGORIES, debt: DEBT_CATEGORIES };
+    catSelect.innerHTML = "";
+    map[type].forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      catSelect.appendChild(opt);
+    });
+  }
+
+  function monthBounds(periodValue) {
+    const [year, month] = periodValue.split("-").map(Number);
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0); // last day of month
+    const toISO = (d) => d.toISOString().slice(0, 10);
+    return { start: toISO(start), end: toISO(end) };
+  }
+
+  function prevPeriod(periodValue) {
+    const [year, month] = periodValue.split("-").map(Number);
+    const d = new Date(year, month - 2, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  async function fetchTransactions(periodValue) {
+    const { start, end } = monthBounds(periodValue);
+    const { data, error } = await supabaseClient
+      .from("transactions")
+      .select("*")
+      .gte("transaction_date", start)
+      .lte("transaction_date", end)
+      .order("transaction_date", { ascending: false });
+    if (error) { console.error(error); return []; }
+    return data;
+  }
+
+  function summarize(transactions) {
+    const sum = (arr) => arr.reduce((a, t) => a + Number(t.amount), 0);
+    const income = sum(transactions.filter(t => t.type === "income"));
+    const expenses = transactions.filter(t => t.type === "expense");
+    const variable = sum(expenses.filter(t => !t.is_fixed));
+    const fixed = sum(expenses.filter(t => t.is_fixed));
+    const totalExpenses = variable + fixed;
+    const savings = sum(transactions.filter(t => t.type === "savings"));
+    const debt = sum(transactions.filter(t => t.type === "debt"));
+    const balance = income - totalExpenses - savings - debt;
+    return { income, totalExpenses, variable, fixed, savings, debt, balance };
+  }
+
+  async function loadDashboard() {
+    const period = document.getElementById("periodSelect").value;
+    const periodMeta = allPeriods.find(p => p.value === period);
+    document.getElementById("periodLabel").textContent = periodMeta ? periodMeta.label : "This Month";
+
+    const [current, previous] = await Promise.all([
+      fetchTransactions(period),
+      fetchTransactions(prevPeriod(period))
+    ]);
+
+    const curr = summarize(current);
+    const prev = summarize(previous);
+
+    // Top banner
+    document.getElementById("bannerIncome").textContent = fmt(curr.income);
+    document.getElementById("bannerExpense").textContent = fmt(curr.totalExpenses);
+    document.getElementById("bannerSavings").textContent = fmt(curr.savings);
+    document.getElementById("bannerBalance").textContent = fmt(curr.balance);
+
+    // Cash flow waterfall
+    document.getElementById("flowIncome").textContent = fmt(curr.income);
+    document.getElementById("flowVariable").textContent = "-" + fmt(curr.variable);
+    document.getElementById("flowFixed").textContent = "-" + fmt(curr.fixed);
+    document.getElementById("flowDebt").textContent = "-" + fmt(curr.debt);
+    document.getElementById("flowSavings").textContent = "-" + fmt(curr.savings);
+    document.getElementById("flowNet").textContent = fmt(curr.balance);
+
+    // Comparison table
+    const rows = [
+      { label: "Income", currVal: curr.income, prevVal: prev.income, higherIsBetter: true },
+      { label: "Total Spending", currVal: curr.totalExpenses, prevVal: prev.totalExpenses, higherIsBetter: false },
+      { label: "Savings", currVal: curr.savings, prevVal: prev.savings, higherIsBetter: true },
+      { label: "Debt Payments", currVal: curr.debt, prevVal: prev.debt, higherIsBetter: false },
+    ];
+    const body = document.getElementById("comparisonBody");
+    body.innerHTML = "";
+    rows.forEach(r => {
+      const diff = r.currVal - r.prevVal;
+      const pct = r.prevVal !== 0 ? (diff / r.prevVal) * 100 : (r.currVal !== 0 ? 100 : 0);
+      const isGood = r.higherIsBetter ? diff >= 0 : diff <= 0;
+      const arrow = diff === 0 ? "→" : (diff > 0 ? "↑" : "↓");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.label}</td>
+        <td class="num">${fmt(r.currVal)}</td>
+        <td class="num">${fmt(r.prevVal)}</td>
+        <td class="num ${isGood ? "variance-up" : "variance-down"}">${arrow} ${Math.abs(pct).toFixed(0)}%</td>
+      `;
+      body.appendChild(tr);
+    });
+
+    // Recent transactions (current period, capped at 12)
+    renderTxList(current.slice(0, 12));
+  }
+
+  function renderTxList(transactions) {
+    const container = document.getElementById("txListBody");
+    container.innerHTML = "";
+    if (transactions.length === 0) {
+      container.innerHTML = '<p class="empty-state">No transactions yet for this period — add your first one above.</p>';
+      return;
+    }
+    transactions.forEach(t => {
+      const row = document.createElement("div");
+      row.className = "tx-row";
+      const sign = t.type === "income" ? "+" : "-";
+      const color = t.type === "income" ? "var(--income)" : t.type === "savings" ? "var(--savings)" : t.type === "debt" ? "var(--debt)" : "var(--expense)";
+      row.innerHTML = `
+        <div class="tx-left">
+          <span class="tx-dot ${t.type}"></span>
+          <div>
+            <span class="tx-cat">${t.category}</span>
+            <span class="tx-date">${t.transaction_date}</span>
+            ${t.description ? `<div class="tx-desc">${escapeHtml(t.description)}</div>` : ""}
+          </div>
+        </div>
+        <div style="display:flex; align-items:center;">
+          <span class="tx-amt num" style="color:${color};">${sign}${fmt(Math.abs(t.amount))}</span>
+          <button class="tx-del" data-id="${t.id}">Delete</button>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+    container.querySelectorAll(".tx-del").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        await supabaseClient.from("transactions").delete().eq("id", id);
+        loadDashboard();
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function addTransaction(e) {
+    e.preventDefault();
+    const msg = document.getElementById("formMsg");
+    msg.className = "form-msg";
+    msg.textContent = "";
+
+    const type = document.getElementById("txType").value;
+    const category = document.getElementById("txCategory").value;
+    const amount = parseFloat(document.getElementById("txAmount").value);
+    const date = document.getElementById("txDate").value;
+    const isFixed = type === "expense" ? document.getElementById("txFixed").checked : false;
+    const description = document.getElementById("txDesc").value.trim();
+
+    if (!amount || amount <= 0) {
+      msg.className = "form-msg error";
+      msg.textContent = "Enter an amount greater than 0.";
+      return;
+    }
+
+    const { error } = await supabaseClient.from("transactions").insert({
+      user_id: currentUser.id,
+      type, category, amount,
+      is_fixed: isFixed,
+      description: description || null,
+      transaction_date: date
+    });
+
+    if (error) {
+      msg.className = "form-msg error";
+      msg.textContent = error.message;
+      return;
+    }
+
+    msg.className = "form-msg ok";
+    msg.textContent = "Transaction added.";
+    document.getElementById("txAmount").value = "";
+    document.getElementById("txDesc").value = "";
+    document.getElementById("txFixed").checked = false;
+    loadDashboard();
+  }
+
+  init();
+</script>
+
+</body>
+</html>
