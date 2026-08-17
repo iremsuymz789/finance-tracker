@@ -343,11 +343,16 @@
         </div>
       </div>
       <div class="balance-setting">
-        <span>Starting balance:</span>
+        <span>Base currency:</span>
+        <select id="baseCurrencySelect" style="width: 78px;"></select>
+        <span style="margin-left: 6px;">Starting balance:</span>
         <input type="number" id="openingBalanceInput" step="0.01" placeholder="0.00">
         <button id="saveOpeningBalance">Save</button>
       </div>
     </div>
+    <p id="rateWarning" style="display:none; font-size:12px; color: var(--expense); margin: -12px 0 16px;">
+      Couldn't fetch live exchange rates — amounts in other currencies are shown at face value until this reconnects.
+    </p>
     <div class="chart-wrap">
       <canvas id="balanceTrendChart"></canvas>
     </div>
@@ -424,6 +429,10 @@
           <input type="number" id="txAmount" min="0" step="0.01" placeholder="0.00" required>
         </div>
         <div>
+          <label for="txCurrency">Currency</label>
+          <select id="txCurrency" required></select>
+        </div>
+        <div>
           <label for="txDate">Date</label>
           <input type="date" id="txDate" required>
         </div>
@@ -456,16 +465,66 @@
   const INCOME_CATEGORIES = ["Sponsorship", "Ad Revenue", "Affiliate", "Product Sales", "Freelance", "Other Income"];
   const SAVINGS_CATEGORIES = ["Emergency Fund", "Investment", "Travel Fund", "Retirement", "Other Savings"];
   const DEBT_CATEGORIES = ["Credit Card", "Loan Payment", "Other Debt"];
+  const CURRENCIES = ["USD", "EUR", "GBP", "TRY", "JPY", "CAD", "AUD", "INR"];
+  const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£", TRY: "₺", JPY: "¥", CAD: "$", AUD: "$", INR: "₹" };
 
   let currentUser = null;
   let allPeriods = []; // list of {value: "2026-08", label: "August 2026"}
   let openingBalance = 0;
+  let baseCurrency = "USD";
+  let exchangeRates = {}; // { EUR: 0.92, TRY: 34.5, ... } meaning 1 baseCurrency = rate[X] of currency X
+  let ratesLoadFailed = false;
   let trendChart = null;
 
   const fmt = (n) => {
     const sign = n < 0 ? "-" : "";
-    return sign + "$" + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const symbol = CURRENCY_SYMBOLS[baseCurrency] || "$";
+    return sign + symbol + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
+
+  const fmtOriginal = (n, currency) => {
+    const symbol = CURRENCY_SYMBOLS[currency] || currency + " ";
+    return symbol + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  // Convert an amount from its original currency into the account's base currency
+  function toBase(amount, currency) {
+    if (currency === baseCurrency) return amount;
+    const rate = exchangeRates[currency];
+    if (!rate) return amount; // rate missing (offline / API issue) — fall back to face value
+    return amount / rate;
+  }
+
+  async function loadExchangeRates() {
+    try {
+      const res = await fetch(`https://api.frankfurter.app/latest?from=${baseCurrency}`);
+      if (!res.ok) throw new Error("rate fetch failed");
+      const data = await res.json();
+      exchangeRates = data.rates || {};
+      ratesLoadFailed = false;
+    } catch (err) {
+      console.error("Exchange rate fetch failed:", err);
+      exchangeRates = {};
+      ratesLoadFailed = true;
+    }
+    document.getElementById("rateWarning").style.display = ratesLoadFailed ? "block" : "none";
+  }
+
+  function populateCurrencySelects() {
+    const txCurrency = document.getElementById("txCurrency");
+    const baseSelect = document.getElementById("baseCurrencySelect");
+    [txCurrency, baseSelect].forEach(sel => sel.innerHTML = "");
+    CURRENCIES.forEach(c => {
+      const opt1 = document.createElement("option");
+      opt1.value = c; opt1.textContent = c;
+      txCurrency.appendChild(opt1);
+      const opt2 = document.createElement("option");
+      opt2.value = c; opt2.textContent = c;
+      baseSelect.appendChild(opt2);
+    });
+    txCurrency.value = baseCurrency;
+    baseSelect.value = baseCurrency;
+  }
 
   // ---------- Auth guard ----------
   async function init() {
@@ -492,20 +551,24 @@
 
     document.getElementById("txForm").addEventListener("submit", addTransaction);
     document.getElementById("saveOpeningBalance").addEventListener("click", saveOpeningBalance);
+    document.getElementById("baseCurrencySelect").addEventListener("change", changeBaseCurrency);
 
     await loadOpeningBalance();
+    populateCurrencySelects();
+    await loadExchangeRates();
     loadDashboard();
   }
 
-  // ---------- Starting balance ----------
+  // ---------- Starting balance & currency ----------
   async function loadOpeningBalance() {
     const { data, error } = await supabaseClient
       .from("user_settings")
-      .select("opening_balance")
+      .select("opening_balance, base_currency")
       .eq("user_id", currentUser.id)
       .maybeSingle();
     if (error) { console.error(error); return; }
     openingBalance = data ? Number(data.opening_balance) : 0;
+    baseCurrency = data && data.base_currency ? data.base_currency : "USD";
     document.getElementById("openingBalanceInput").value = openingBalance.toFixed(2);
   }
 
@@ -514,9 +577,20 @@
     const value = parseFloat(input.value) || 0;
     const { error } = await supabaseClient
       .from("user_settings")
-      .upsert({ user_id: currentUser.id, opening_balance: value, updated_at: new Date().toISOString() });
+      .upsert({ user_id: currentUser.id, opening_balance: value, base_currency: baseCurrency, updated_at: new Date().toISOString() });
     if (error) { alert(error.message); return; }
     openingBalance = value;
+    loadDashboard();
+  }
+
+  async function changeBaseCurrency() {
+    baseCurrency = document.getElementById("baseCurrencySelect").value;
+    document.getElementById("txCurrency").value = baseCurrency;
+    const { error } = await supabaseClient
+      .from("user_settings")
+      .upsert({ user_id: currentUser.id, opening_balance: openingBalance, base_currency: baseCurrency, updated_at: new Date().toISOString() });
+    if (error) { alert(error.message); return; }
+    await loadExchangeRates();
     loadDashboard();
   }
 
@@ -576,7 +650,7 @@
 
   function netOf(transactions) {
     return transactions.reduce((total, t) => {
-      const amt = Number(t.amount);
+      const amt = toBase(Number(t.amount), t.currency || "USD");
       if (t.type === "income") return total + amt;
       return total - amt; // expense, savings, debt all reduce balance
     }, 0);
@@ -585,7 +659,7 @@
   async function fetchTransactionsBefore(dateISO) {
     const { data, error } = await supabaseClient
       .from("transactions")
-      .select("type, amount, transaction_date")
+      .select("type, amount, currency, transaction_date")
       .lt("transaction_date", dateISO);
     if (error) { console.error(error); return []; }
     return data;
@@ -606,7 +680,7 @@
     const dailyNet = new Array(daysInMonth + 1).fill(0);
     currentMonthTx.forEach(t => {
       const day = Number(t.transaction_date.split("-")[2]);
-      const amt = Number(t.amount);
+      const amt = toBase(Number(t.amount), t.currency || "USD");
       dailyNet[day] += (t.type === "income") ? amt : -amt;
     });
 
@@ -689,7 +763,7 @@
   }
 
   function summarize(transactions) {
-    const sum = (arr) => arr.reduce((a, t) => a + Number(t.amount), 0);
+    const sum = (arr) => arr.reduce((a, t) => a + toBase(Number(t.amount), t.currency || "USD"), 0);
     const income = sum(transactions.filter(t => t.type === "income"));
     const expenses = transactions.filter(t => t.type === "expense");
     const variable = sum(expenses.filter(t => !t.is_fixed));
@@ -771,6 +845,9 @@
       row.className = "tx-row";
       const sign = t.type === "income" ? "+" : "-";
       const color = t.type === "income" ? "var(--income)" : t.type === "savings" ? "var(--savings)" : t.type === "debt" ? "var(--debt)" : "var(--expense)";
+      const currency = t.currency || "USD";
+      const originalAmt = fmtOriginal(Math.abs(t.amount), currency);
+      const convertedAmt = currency !== baseCurrency ? ` <span style="color: var(--ink-faint); font-size: 12px;">(≈ ${fmt(Math.abs(toBase(Number(t.amount), currency)))})</span>` : "";
       row.innerHTML = `
         <div class="tx-left">
           <span class="tx-dot ${t.type}"></span>
@@ -781,7 +858,7 @@
           </div>
         </div>
         <div style="display:flex; align-items:center;">
-          <span class="tx-amt num" style="color:${color};">${sign}${fmt(Math.abs(t.amount))}</span>
+          <span class="tx-amt num" style="color:${color};">${sign}${originalAmt}${convertedAmt}</span>
           <button class="tx-del" data-id="${t.id}">Delete</button>
         </div>
       `;
@@ -811,6 +888,7 @@
     const type = document.getElementById("txType").value;
     const category = document.getElementById("txCategory").value;
     const amount = parseFloat(document.getElementById("txAmount").value);
+    const currency = document.getElementById("txCurrency").value;
     const date = document.getElementById("txDate").value;
     const isFixed = type === "expense" ? document.getElementById("txFixed").checked : false;
     const description = document.getElementById("txDesc").value.trim();
@@ -823,7 +901,7 @@
 
     const { error } = await supabaseClient.from("transactions").insert({
       user_id: currentUser.id,
-      type, category, amount,
+      type, category, amount, currency,
       is_fixed: isFixed,
       description: description || null,
       transaction_date: date
