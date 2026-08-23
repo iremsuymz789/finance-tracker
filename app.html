@@ -372,6 +372,45 @@
   .goal-pane{ display:none; }
   .goal-pane.active{ display:block; }
 
+  .calc-sliders{ display:flex; flex-direction: column; gap: 18px; margin-bottom: 24px; }
+  .calc-slider-row label{ display:flex; justify-content: space-between; font-size: 13px; color: var(--ink-dim); margin-bottom: 8px; }
+  .calc-slider-row .calc-val{ color: var(--savings); font-weight: 600; }
+  input[type="range"]{
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--line);
+    border-radius: 2px;
+    padding: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--savings);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+  input[type="range"]::-moz-range-thumb{
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--savings);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+  .calc-stats{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .calc-stat{ background: var(--surface-2); border-radius: 4px; padding: 14px 16px; }
+  .calc-stat .t-label{ font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 6px; }
+  .calc-stat .t-val{ font-size: 15px; font-weight: 600; }
+
+  .holding-row{ display:flex; align-items:center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .holding-row:last-child{ border-bottom: none; }
+  .holding-left{ display:flex; align-items:center; gap: 10px; }
+
+  @media (max-width: 800px){
+    .calc-stats{ grid-template-columns: 1fr; }
+  }
+
   @media (max-width: 800px){
     .banner{ grid-template-columns: 1fr 1fr; }
     .grid-2{ grid-template-columns: 1fr; }
@@ -542,6 +581,7 @@
     <h1 class="page-title">Goals &amp; Life</h1>
     <div class="filter-pills" id="goalPills">
       <button class="filter-pill active" data-pane="goal-savings">Savings Goals</button>
+      <button class="filter-pill" data-pane="goal-investments">Investments</button>
       <button class="filter-pill" data-pane="goal-habits">Habit Checklist</button>
       <button class="filter-pill" data-pane="goal-creator">Creator Metrics</button>
     </div>
@@ -549,6 +589,67 @@
     <div class="goal-pane active" id="goal-savings">
       <div class="panel" style="margin-bottom:0;">
         <div class="placeholder-card">Coming soon — set targets like an emergency fund, travel fund, or a specific purchase, and track progress with visual bars.</div>
+      </div>
+    </div>
+
+    <div class="goal-pane" id="goal-investments">
+      <div class="panel">
+        <p class="section-label">Total Saved (All Time)</p>
+        <p class="value num" id="totalSavedValue" style="font-family:'Fraunces',serif; font-weight:500; font-size:32px; color: var(--savings);">$0.00</p>
+        <p style="font-size:12px; color: var(--ink-faint); margin-top:6px;">Sum of every confirmed savings/investment transaction you've logged, converted to your base currency.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Portfolio Breakdown</h2>
+        <div id="holdingsContent">
+          <div class="breakdown-grid" id="holdingsChartWrap" style="display:none;">
+            <div class="breakdown-chart"><canvas id="holdingsDonutChart"></canvas></div>
+            <div class="breakdown-legend" id="holdingsLegend"></div>
+          </div>
+          <p class="empty-state" id="holdingsEmpty">No holdings logged yet — add one below.</p>
+        </div>
+        <form id="holdingForm" style="margin-top:18px;">
+          <div class="form-row">
+            <div><label for="holdingName">Holding name</label><input type="text" id="holdingName" placeholder="e.g. S&amp;P 500 ETF, AAPL, Bitcoin" required></div>
+            <div><label for="holdingAmount">Amount invested</label><input type="number" id="holdingAmount" min="0" step="0.01" placeholder="0.00" required></div>
+            <div><label for="holdingCurrency">Currency</label><select id="holdingCurrency" required></select></div>
+          </div>
+          <button type="submit" class="submit-btn" style="width:auto; padding:11px 22px;">Add Holding</button>
+          <p class="form-msg" id="holdingMsg"></p>
+        </form>
+        <div id="holdingsList" style="margin-top: 18px;"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:0;">
+        <h2>Investment Growth Calculator</h2>
+        <p style="font-size:12.5px; color: var(--ink-faint); margin: -10px 0 20px;">Play with the numbers to see how your money could grow if you kept this up.</p>
+
+        <div class="calc-sliders">
+          <div class="calc-slider-row">
+            <label>Starting Amount <span class="calc-val num" id="calcInitialVal">$1,000</span></label>
+            <input type="range" id="calcInitial" min="0" max="50000" step="100" value="1000">
+          </div>
+          <div class="calc-slider-row">
+            <label>Monthly Contribution <span class="calc-val num" id="calcMonthlyVal">$200</span></label>
+            <input type="range" id="calcMonthly" min="0" max="3000" step="25" value="200">
+          </div>
+          <div class="calc-slider-row">
+            <label>Annual Return Rate <span class="calc-val num" id="calcRateVal">7%</span></label>
+            <input type="range" id="calcRate" min="0" max="15" step="0.5" value="7">
+          </div>
+          <div class="calc-slider-row">
+            <label>Time Horizon <span class="calc-val num" id="calcYearsVal">10 years</span></label>
+            <input type="range" id="calcYears" min="1" max="40" step="1" value="10">
+          </div>
+        </div>
+
+        <div class="calc-stats">
+          <div class="calc-stat"><p class="t-label">Total Contributed</p><p class="t-val num" id="calcContributed">$0.00</p></div>
+          <div class="calc-stat"><p class="t-label">Growth Earned</p><p class="t-val num" id="calcGrowth" style="color: var(--income);">$0.00</p></div>
+          <div class="calc-stat"><p class="t-label">Projected Balance</p><p class="t-val num" id="calcFinal" style="color: var(--savings); font-size:19px;">$0.00</p></div>
+        </div>
+
+        <div class="chart-wrap" style="margin-top: 20px;"><canvas id="calcChart"></canvas></div>
       </div>
     </div>
     <div class="goal-pane" id="goal-habits">
@@ -700,6 +801,7 @@
     Housing: "#D98E51", Transport: "#6FA8BF", Food: "#BF6F8F", Leisure: "#A88FBF",
     Healthcare: "#6FBF9E", Shopping: "#BFA76F", Education: "#6F8FBF", Miscellaneous: "#8A8F87"
   };
+  const HOLDING_COLORS = ["#8FBF6F", "#E8B84B", "#6FA8BF", "#BF6F8F", "#A88FBF", "#D98E51", "#6FBF9E", "#C97B84", "#6F8FBF", "#BFA76F"];
 
   let currentUser = null;
   let allPeriods = [];
@@ -707,7 +809,7 @@
   let baseCurrency = "USD";
   let exchangeRates = {};
   let ratesLoadFailed = false;
-  let trendChart = null, donutChart = null, donutChart2 = null, barChart = null, plannedActualChart = null;
+  let trendChart = null, donutChart = null, donutChart2 = null, barChart = null, plannedActualChart = null, holdingsChart = null, calcChart = null;
   let currentBudgets = { income: 0, savings: 0, debt: 0, categories: {} };
 
   const fmt = (n) => {
@@ -803,15 +905,174 @@
     document.getElementById("calcAmount").addEventListener("input", updateCalculator);
     document.getElementById("calcFrom").addEventListener("change", updateCalculator);
     document.getElementById("calcTo").addEventListener("change", updateCalculator);
+    document.getElementById("holdingForm").addEventListener("submit", addHolding);
+    ["calcInitial", "calcMonthly", "calcRate", "calcYears"].forEach(id => {
+      document.getElementById(id).addEventListener("input", updateGrowthCalculator);
+    });
 
     buildBudgetCategoryInputs();
     await loadOpeningBalance();
     populateCurrencySelects();
+    populateHoldingCurrency();
     applyTheme(await loadThemePreference(), false);
     await loadExchangeRates();
     updateCalculator();
     renderRatesTable();
+    updateGrowthCalculator();
+    loadTotalSaved();
+    loadHoldings();
     loadDashboard();
+  }
+
+  function populateHoldingCurrency() {
+    const sel = document.getElementById("holdingCurrency");
+    sel.innerHTML = "";
+    CURRENCIES.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    });
+    sel.value = baseCurrency;
+  }
+
+  // ---------- Total Saved ----------
+  async function loadTotalSaved() {
+    const { data, error } = await supabaseClient
+      .from("transactions")
+      .select("amount, currency")
+      .eq("type", "savings")
+      .eq("status", "actual");
+    if (error) { console.error(error); return; }
+    const total = (data || []).reduce((sum, t) => sum + toBase(Number(t.amount), t.currency || "USD"), 0);
+    document.getElementById("totalSavedValue").textContent = fmt(total);
+  }
+
+  // ---------- Holdings ----------
+  async function loadHoldings() {
+    const { data, error } = await supabaseClient.from("holdings").select("*").order("created_at", { ascending: false });
+    if (error) { console.error(error); return; }
+    renderHoldings(data || []);
+  }
+
+  function renderHoldings(holdings) {
+    const chartWrap = document.getElementById("holdingsChartWrap");
+    const empty = document.getElementById("holdingsEmpty");
+    const legend = document.getElementById("holdingsLegend");
+    const list = document.getElementById("holdingsList");
+    list.innerHTML = "";
+
+    if (holdings.length === 0) {
+      chartWrap.style.display = "none";
+      empty.style.display = "block";
+      if (holdingsChart) { holdingsChart.destroy(); holdingsChart = null; }
+      return;
+    }
+    chartWrap.style.display = "grid";
+    empty.style.display = "none";
+
+    const converted = holdings.map((h, i) => ({
+      name: h.name,
+      amount: toBase(Number(h.amount), h.currency || "USD"),
+      color: HOLDING_COLORS[i % HOLDING_COLORS.length],
+      id: h.id, original: h.amount, currency: h.currency
+    })).sort((a, b) => b.amount - a.amount);
+    const grandTotal = converted.reduce((a, b) => a + b.amount, 0);
+
+    legend.innerHTML = "";
+    converted.forEach(h => {
+      const pct = grandTotal ? ((h.amount / grandTotal) * 100).toFixed(0) : 0;
+      const row = document.createElement("div");
+      row.className = "legend-row";
+      row.innerHTML = `<div class="legend-left"><span class="legend-dot" style="background:${h.color};"></span><span class="legend-cat">${escapeHtml(h.name)}</span><span class="legend-pct">${pct}%</span></div><span class="legend-amt num">${fmt(h.amount)}</span>`;
+      legend.appendChild(row);
+    });
+
+    const ctx = document.getElementById("holdingsDonutChart").getContext("2d");
+    if (holdingsChart) holdingsChart.destroy();
+    holdingsChart = new Chart(ctx, {
+      type: "doughnut",
+      data: { labels: converted.map(h => h.name), datasets: [{ data: converted.map(h => Number(h.amount.toFixed(2))), backgroundColor: converted.map(h => h.color), borderColor: "var(--surface)", borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+    });
+
+    holdings.forEach(h => {
+      const row = document.createElement("div");
+      row.className = "holding-row";
+      row.innerHTML = `<div class="holding-left"><span>${escapeHtml(h.name)}</span></div><div style="display:flex; align-items:center;"><span class="num">${fmtOriginal(h.amount, h.currency || "USD")}</span><button class="tx-del" data-id="${h.id}">Delete</button></div>`;
+      list.appendChild(row);
+    });
+    list.querySelectorAll(".tx-del").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await supabaseClient.from("holdings").delete().eq("id", btn.getAttribute("data-id"));
+        loadHoldings();
+      });
+    });
+  }
+
+  async function addHolding(e) {
+    e.preventDefault();
+    const msg = document.getElementById("holdingMsg");
+    msg.className = "form-msg";
+    const name = document.getElementById("holdingName").value.trim();
+    const amount = parseFloat(document.getElementById("holdingAmount").value);
+    const currency = document.getElementById("holdingCurrency").value;
+    if (!name || !amount || amount <= 0) { msg.className = "form-msg error"; msg.textContent = "Enter a name and an amount greater than 0."; return; }
+    const { error } = await supabaseClient.from("holdings").insert({ user_id: currentUser.id, name, amount, currency });
+    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
+    msg.className = "form-msg ok";
+    msg.textContent = "Holding added.";
+    document.getElementById("holdingName").value = "";
+    document.getElementById("holdingAmount").value = "";
+    loadHoldings();
+  }
+
+  // ---------- Growth calculator ----------
+  function updateGrowthCalculator() {
+    const initial = parseFloat(document.getElementById("calcInitial").value);
+    const monthly = parseFloat(document.getElementById("calcMonthly").value);
+    const ratePct = parseFloat(document.getElementById("calcRate").value);
+    const years = parseInt(document.getElementById("calcYears").value);
+
+    document.getElementById("calcInitialVal").textContent = fmt(initial);
+    document.getElementById("calcMonthlyVal").textContent = fmt(monthly);
+    document.getElementById("calcRateVal").textContent = ratePct + "%";
+    document.getElementById("calcYearsVal").textContent = years + (years === 1 ? " year" : " years");
+
+    const monthlyRate = ratePct / 100 / 12;
+    const totalMonths = years * 12;
+    let balance = initial;
+    let contributed = initial;
+    const labels = [0];
+    const balances = [Number(balance.toFixed(2))];
+
+    for (let m = 1; m <= totalMonths; m++) {
+      balance = balance * (1 + monthlyRate) + monthly;
+      contributed += monthly;
+      if (m % 12 === 0) {
+        labels.push(m / 12);
+        balances.push(Number(balance.toFixed(2)));
+      }
+    }
+
+    const growth = balance - contributed;
+    document.getElementById("calcContributed").textContent = fmt(contributed);
+    document.getElementById("calcGrowth").textContent = fmt(growth);
+    document.getElementById("calcFinal").textContent = fmt(balance);
+
+    const ctx = document.getElementById("calcChart").getContext("2d");
+    if (calcChart) calcChart.destroy();
+    calcChart = new Chart(ctx, {
+      type: "line",
+      data: { labels: labels.map(y => "Yr " + y), datasets: [{ label: "Balance", data: balances, borderColor: "#8FBF6F", backgroundColor: "#8FBF6F22", fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => fmt(item.parsed.y) } } },
+        scales: {
+          x: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 } } },
+          y: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val.toLocaleString() } }
+        }
+      }
+    });
   }
 
   async function loadThemePreference() {
@@ -1029,6 +1290,9 @@
     await loadExchangeRates();
     updateCalculator();
     renderRatesTable();
+    updateGrowthCalculator();
+    loadTotalSaved();
+    loadHoldings();
     loadDashboard();
   }
 
