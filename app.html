@@ -1156,6 +1156,35 @@
       }
     }
 
+    // Fallbacks — fill in with simple current-state facts if the trend-based
+    // insights above didn't have enough history to say much yet.
+    if (insights.length < 2) {
+      const monthStart = iso(new Date(today.getFullYear(), today.getMonth(), 1));
+      const thisMonthTx = last60.filter(t => t.transaction_date >= monthStart);
+
+      if (thisMonthTx.length > 0) {
+        insights.push({ icon: "📝", html: `You've logged <b>${thisMonthTx.length}</b> transaction${thisMonthTx.length === 1 ? "" : "s"} so far this month.` });
+      }
+
+      const incomeSoFar = sumIn(thisMonthTx, t => t.type === "income");
+      if (incomeSoFar > 0 && insights.length < 3) {
+        insights.push({ icon: "💰", html: `You've earned <b>${fmt(incomeSoFar)}</b> so far this month.` });
+      }
+
+      const expenseTotals = {};
+      thisMonthTx.filter(t => t.type === "expense").forEach(t => {
+        expenseTotals[t.category] = (expenseTotals[t.category] || 0) + toBase(Number(t.amount), t.currency || "USD");
+      });
+      const topExpense = Object.entries(expenseTotals).sort((a, b) => b[1] - a[1])[0];
+      if (topExpense && insights.length < 3) {
+        insights.push({ icon: "🏷️", html: `<b>${topExpense[0]}</b> is your biggest expense category this month at <b>${fmt(topExpense[1])}</b>.` });
+      }
+
+      if (last60.length === 0 && insights.length === 0) {
+        insights.push({ icon: "👋", html: `Add your first transaction to start seeing personalized insights here.` });
+      }
+    }
+
     return insights.slice(0, 3);
   }
 
@@ -1227,7 +1256,7 @@
     holdingsChart = new Chart(ctx, {
       type: "doughnut",
       data: { labels: converted.map(h => h.name), datasets: [{ data: converted.map(h => Number(h.amount.toFixed(2))), backgroundColor: converted.map(h => h.color), borderColor: "var(--surface)", borderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: true, animateRotate: true, duration: 900, easing: "easeOutCubic" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
     });
 
     holdings.forEach(h => {
@@ -1296,11 +1325,24 @@
 
     const ctx = document.getElementById("calcChart").getContext("2d");
     if (calcChart) calcChart.destroy();
+    const calcPointDelay = balances.length > 1 ? 1200 / balances.length : 0;
     calcChart = new Chart(ctx, {
       type: "line",
       data: { labels: labels.map(y => "Yr " + y), datasets: [{ label: "Balance", data: balances, borderColor: "#8FBF6F", backgroundColor: "#8FBF6F22", fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
+        animation: {
+          x: {
+            type: "number", easing: "linear", duration: calcPointDelay,
+            from: NaN,
+            delay(ctx2) { return ctx2.type === "data" ? ctx2.index * calcPointDelay : 0; }
+          },
+          y: {
+            type: "number", easing: "linear", duration: calcPointDelay,
+            from: (ctx2) => ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0]),
+            delay(ctx2) { return ctx2.type === "data" ? ctx2.index * calcPointDelay : 0; }
+          }
+        },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => fmt(item.parsed.y) } } },
         scales: {
           x: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 } } },
@@ -1637,12 +1679,26 @@
 
     const ctx = document.getElementById("balanceTrendChart").getContext("2d");
     const lineColor = totalChange >= 0 ? "#8FBF6F" : "#D64933";
+    const totalDrawTime = 1200;
+    const pointDelay = balances.length > 1 ? totalDrawTime / balances.length : 0;
     if (trendChart) trendChart.destroy();
     trendChart = new Chart(ctx, {
       type: "line",
       data: { labels, datasets: [{ label: "Balance", data: balances, borderColor: lineColor, backgroundColor: lineColor + "22", fill: true, tension: 0.25, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
+        animation: {
+          x: {
+            type: "number", easing: "linear", duration: pointDelay,
+            from: NaN,
+            delay(ctx2) { return ctx2.type === "data" ? ctx2.index * pointDelay : 0; }
+          },
+          y: {
+            type: "number", easing: "linear", duration: pointDelay,
+            from: (ctx2) => ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0]),
+            delay(ctx2) { return ctx2.type === "data" ? ctx2.index * pointDelay : 0; }
+          }
+        },
         plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => `Day ${items[0].label}`, label: (item) => fmt(item.parsed.y) } } },
         scales: {
           x: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 } } },
@@ -1702,7 +1758,7 @@
     const donutOpts = {
       type: "doughnut",
       data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "var(--surface)", borderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: true, animateRotate: true, duration: 900, easing: "easeOutCubic" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
     };
     if (donutChart) donutChart.destroy();
     donutChart = new Chart(donutCanvas.getContext("2d"), donutOpts);
@@ -1715,6 +1771,7 @@
       data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 3, barThickness: 16 }] },
       options: {
         indexAxis: "y", responsive: true, maintainAspectRatio: false,
+        animation: { duration: 900, easing: "easeOutQuart" },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => fmt(item.parsed.x) } } },
         scales: {
           x: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val } },
@@ -1766,6 +1823,7 @@
       ]},
       options: {
         responsive: true, maintainAspectRatio: false,
+        animation: { duration: 900, easing: "easeOutQuart" },
         plugins: {
           legend: { position: "top", labels: { color: "#9CA89E", font: { family: "IBM Plex Sans", size: 12 }, boxWidth: 12 } },
           tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${fmt(item.parsed.y)}` } }
