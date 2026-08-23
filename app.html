@@ -104,7 +104,7 @@
   }
   .profile-btn:hover{ border-color: var(--savings); }
 
-  main.page-container{ max-width: 1100px; margin: 0 auto; padding: 28px 24px 40px; }
+  .page-container{ max-width: 1100px; margin: 0 auto; padding: 28px 24px 40px; }
   .page{ display:none; }
   .page.active{ display:block; }
 
@@ -150,63 +150,61 @@
   .nav-item .nav-icon{ font-size: 18px; }
   .nav-item.active{ color: var(--savings); }
 
-  /* ---------- Overlay (Profile hub) ---------- */
-  .overlay{
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.55);
-    z-index: 50;
-    display:flex;
-    justify-content: flex-end;
-  }
-  .overlay.hidden{ display:none; }
-  .overlay-panel{
-    width: 100%;
-    max-width: 420px;
-    background: var(--bg);
-    height: 100%;
-    overflow-y: auto;
-    padding: 24px;
-    border-left: 1px solid var(--line);
-    position: relative;
-  }
-  .close-btn{
-    position: absolute;
-    top: 20px; right: 20px;
+  /* ---------- Settings page ---------- */
+  .back-btn{
     background: none; border: none;
     color: var(--ink-dim);
-    font-size: 22px;
+    font-size: 14px;
     cursor: pointer;
-    line-height: 1;
+    margin-bottom: 14px;
+    padding: 0;
   }
-  .close-btn:hover{ color: var(--ink); }
-  .overlay-panel h2{
-    font-family: 'Fraunces', serif;
-    font-weight: 500;
-    font-size: 20px;
-    margin: 0 30px 22px 0;
-  }
-  .profile-tabs{
-    display:flex;
-    gap: 6px;
-    margin-bottom: 22px;
-    flex-wrap: wrap;
-  }
-  .profile-tab-btn{
+  .back-btn:hover{ color: var(--savings); }
+
+  .settings-item{
     background: var(--surface);
     border: 1px solid var(--line);
-    color: var(--ink-dim);
-    border-radius: 20px;
-    padding: 7px 14px;
-    font-size: 12.5px;
-    cursor: pointer;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
   }
-  .profile-tab-btn.active{ color: var(--bg); background: var(--savings); border-color: var(--savings); }
-  .profile-section{ display:none; }
-  .profile-section.active{ display:block; }
-  .profile-section h3{
+  .settings-item summary{
+    list-style: none;
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 18px 20px;
+    cursor: pointer;
+    position: relative;
+  }
+  .settings-item summary::-webkit-details-marker{ display:none; }
+  .settings-item summary::after{
+    content: "›";
+    position: absolute;
+    right: 20px;
+    font-size: 22px;
+    color: var(--ink-faint);
+    transform: rotate(90deg);
+    transition: transform 0.15s ease;
+  }
+  .settings-item[open] summary::after{ transform: rotate(-90deg); }
+  .settings-item[open] summary{ border-bottom: 1px solid var(--line); }
+  .settings-icon{
+    font-size: 20px;
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink: 0;
+  }
+  .settings-text{ display:flex; flex-direction: column; gap: 3px; }
+  .settings-title{ font-size: 14.5px; color: var(--ink); font-weight: 500; }
+  .settings-desc{ font-size: 12px; color: var(--ink-faint); }
+  .settings-body{ padding: 22px 20px 24px; }
+  .settings-body h3{
     font-family: 'Fraunces', serif;
     font-weight: 500;
-    font-size: 15.5px;
+    font-size: 15px;
     margin: 0 0 14px;
   }
 
@@ -228,7 +226,7 @@
   .rates-table td:last-child{ text-align: right; color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
 
   .placeholder-card{
-    background: var(--surface);
+    background: var(--surface-2);
     border: 1px dashed var(--line);
     border-radius: 5px;
     padding: 20px;
@@ -418,9 +416,8 @@
     .budget-grid{ grid-template-columns: 1fr; }
     .cal-day{ min-height: 40px; padding: 4px 5px; }
     .cal-day .cal-net{ font-size: 9px; }
-    main.page-container{ padding: 22px 16px 40px; }
+    .page-container{ padding: 22px 16px 40px; }
     .topbar{ padding: 14px 16px; }
-    .overlay-panel{ max-width: 100%; }
   }
 </style>
 </head>
@@ -716,77 +713,81 @@
   <button class="nav-item" data-page="analytics"><span class="nav-icon">📈</span>Analytics</button>
 </nav>
 
-<!-- Profile overlay -->
-<div class="overlay hidden" id="profileOverlay">
-  <div class="overlay-panel">
-    <button class="close-btn" id="closeProfile">&times;</button>
-    <h2>Profile &amp; Settings</h2>
-    <div class="profile-tabs">
-      <button class="profile-tab-btn active" data-tab="security">Security</button>
-      <button class="profile-tab-btn" data-tab="bank">Bank Sync</button>
-      <button class="profile-tab-btn" data-tab="appearance">Appearance</button>
-      <button class="profile-tab-btn" data-tab="currency">Currency</button>
-    </div>
+<!-- ================= SETTINGS ================= -->
+<div class="page-container">
+  <section id="page-settings" class="page">
+    <button class="back-btn" id="backFromSettings">‹ Back</button>
+    <h1 class="page-title">Profile &amp; Settings</h1>
 
-    <div class="profile-section active" id="tab-security">
-      <h3>Change Password</h3>
-      <form id="passwordForm">
-        <div class="form-row"><div>
-          <label for="newPassword">New Password</label>
-          <input type="password" id="newPassword" minlength="6" required>
-        </div></div>
-        <div class="form-row"><div>
-          <label for="confirmPassword">Confirm New Password</label>
-          <input type="password" id="confirmPassword" minlength="6" required>
-        </div></div>
-        <button type="submit" class="submit-btn">Update Password</button>
-        <p class="form-msg" id="passwordMsg"></p>
-      </form>
-      <h3 style="margin-top:28px;">Log Out</h3>
-      <button class="submit-btn" id="logoutBtn" style="background: var(--surface-2); color: var(--ink);">Log out</button>
-    </div>
+    <details class="settings-item" open>
+      <summary><span class="settings-icon">🔒</span><span class="settings-text"><span class="settings-title">Security</span><span class="settings-desc">Password, log out</span></span></summary>
+      <div class="settings-body">
+        <h3>Change Password</h3>
+        <form id="passwordForm">
+          <div class="form-row"><div>
+            <label for="newPassword">New Password</label>
+            <input type="password" id="newPassword" minlength="6" required>
+          </div></div>
+          <div class="form-row"><div>
+            <label for="confirmPassword">Confirm New Password</label>
+            <input type="password" id="confirmPassword" minlength="6" required>
+          </div></div>
+          <button type="submit" class="submit-btn" style="width:auto; padding:11px 22px;">Update Password</button>
+          <p class="form-msg" id="passwordMsg"></p>
+        </form>
+        <h3 style="margin-top:26px;">Log Out</h3>
+        <button class="submit-btn" id="logoutBtn" style="width:auto; padding:11px 22px; background: var(--surface-2); color: var(--ink);">Log out</button>
+      </div>
+    </details>
 
-    <div class="profile-section" id="tab-bank">
-      <h3>Bank Account Sync</h3>
-      <div class="placeholder-card">Coming soon — securely connect your bank account via Open Banking (Plaid, Teller, or GoCardless) to import transactions automatically. This requires a backend server and is planned for a later phase.</div>
-    </div>
+    <details class="settings-item">
+      <summary><span class="settings-icon">🏦</span><span class="settings-text"><span class="settings-title">Bank Sync</span><span class="settings-desc">Connect a bank account</span></span></summary>
+      <div class="settings-body">
+        <div class="placeholder-card">Coming soon — securely connect your bank account via Open Banking (Plaid, Teller, or GoCardless) to import transactions automatically. This requires a backend server and is planned for a later phase.</div>
+      </div>
+    </details>
 
-    <div class="profile-section" id="tab-appearance">
-      <h3>Color Theme</h3>
-      <div class="theme-swatches">
-        <div class="swatch-col">
-          <div class="theme-swatch" data-theme="ledger" style="background:#0F1512;"><div style="background:#8FBF6F; height:33%;"></div><div style="background:#E8B84B; height:33%;"></div><div style="background:#D64933; height:34%;"></div></div>
-          <p class="swatch-label">Ledger</p>
-        </div>
-        <div class="swatch-col">
-          <div class="theme-swatch" data-theme="midnight" style="background:#0D1220;"><div style="background:#7FC8A9; height:33%;"></div><div style="background:#7FA8D9; height:33%;"></div><div style="background:#E0667A; height:34%;"></div></div>
-          <p class="swatch-label">Midnight</p>
-        </div>
-        <div class="swatch-col">
-          <div class="theme-swatch" data-theme="sand" style="background:#F4EFE6;"><div style="background:#5F8F52; height:33%;"></div><div style="background:#B9852B; height:33%;"></div><div style="background:#C15139; height:34%;"></div></div>
-          <p class="swatch-label">Sand</p>
+    <details class="settings-item">
+      <summary><span class="settings-icon">🎨</span><span class="settings-text"><span class="settings-title">Appearance</span><span class="settings-desc">Color theme</span></span></summary>
+      <div class="settings-body">
+        <div class="theme-swatches">
+          <div class="swatch-col">
+            <div class="theme-swatch" data-theme="ledger" style="background:#0F1512;"><div style="background:#8FBF6F; height:33%;"></div><div style="background:#E8B84B; height:33%;"></div><div style="background:#D64933; height:34%;"></div></div>
+            <p class="swatch-label">Ledger</p>
+          </div>
+          <div class="swatch-col">
+            <div class="theme-swatch" data-theme="midnight" style="background:#0D1220;"><div style="background:#7FC8A9; height:33%;"></div><div style="background:#7FA8D9; height:33%;"></div><div style="background:#E0667A; height:34%;"></div></div>
+            <p class="swatch-label">Midnight</p>
+          </div>
+          <div class="swatch-col">
+            <div class="theme-swatch" data-theme="sand" style="background:#F4EFE6;"><div style="background:#5F8F52; height:33%;"></div><div style="background:#B9852B; height:33%;"></div><div style="background:#C15139; height:34%;"></div></div>
+            <p class="swatch-label">Sand</p>
+          </div>
         </div>
       </div>
-    </div>
+    </details>
 
-    <div class="profile-section" id="tab-currency">
-      <h3>Base Currency</h3>
-      <select id="baseCurrencySelect" style="margin-bottom: 20px;"></select>
+    <details class="settings-item">
+      <summary><span class="settings-icon">💱</span><span class="settings-text"><span class="settings-title">Currency</span><span class="settings-desc">Base currency, converter, rates</span></span></summary>
+      <div class="settings-body">
+        <h3>Base Currency</h3>
+        <select id="baseCurrencySelect" style="margin-bottom: 20px;"></select>
 
-      <h3>Quick Converter</h3>
-      <div class="form-row">
-        <div><label for="calcAmount">Amount</label><input type="number" id="calcAmount" value="100" step="0.01"></div>
+        <h3>Quick Converter</h3>
+        <div class="form-row">
+          <div><label for="calcAmount">Amount</label><input type="number" id="calcAmount" value="100" step="0.01"></div>
+        </div>
+        <div class="form-row">
+          <div><label for="calcFrom">From</label><select id="calcFrom"></select></div>
+          <div><label for="calcTo">To</label><select id="calcTo"></select></div>
+        </div>
+        <p class="form-msg ok" id="calcResult" style="font-size:15px; margin: 6px 0 20px;"></p>
+
+        <h3>Current Rates <span style="font-weight:400; color:var(--ink-faint); font-size:11.5px;">(relative to base)</span></h3>
+        <table class="rates-table" id="ratesTable"></table>
       </div>
-      <div class="form-row">
-        <div><label for="calcFrom">From</label><select id="calcFrom"></select></div>
-        <div><label for="calcTo">To</label><select id="calcTo"></select></div>
-      </div>
-      <p class="form-msg ok" id="calcResult" style="font-size:15px; margin: 6px 0 20px;"></p>
-
-      <h3>Current Rates <span style="font-weight:400; color:var(--ink-faint); font-size:11.5px;">(relative to base)</span></h3>
-      <table class="rates-table" id="ratesTable"></table>
-    </div>
-  </div>
+    </details>
+  </section>
 </div>
 
 <script src="supabaseClient.js"></script>
@@ -831,29 +832,24 @@
   function todayISO() { return new Date().toISOString().slice(0, 10); }
 
   // ---------- Navigation ----------
+  let lastMainPage = "dashboard";
+  const MAIN_PAGES = ["dashboard", "transactions", "goals", "analytics"];
+
   function showPage(pageId) {
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     document.getElementById(`page-${pageId}`).classList.add("active");
-    document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.page === pageId));
+    if (MAIN_PAGES.includes(pageId)) {
+      lastMainPage = pageId;
+      document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.page === pageId));
+    }
   }
   document.querySelectorAll(".nav-item").forEach(btn => {
     btn.addEventListener("click", () => showPage(btn.dataset.page));
   });
 
-  document.getElementById("profileBtn").addEventListener("click", () => {
-    document.getElementById("profileOverlay").classList.remove("hidden");
-  });
-  document.getElementById("closeProfile").addEventListener("click", () => {
-    document.getElementById("profileOverlay").classList.add("hidden");
-  });
-  document.querySelectorAll(".profile-tab-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".profile-tab-btn").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".profile-section").forEach(s => s.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
-    });
-  });
+  document.getElementById("profileBtn").addEventListener("click", () => showPage("settings"));
+  document.getElementById("backFromSettings").addEventListener("click", () => showPage(lastMainPage));
+
   document.querySelectorAll(".theme-swatch").forEach(sw => {
     sw.addEventListener("click", () => applyTheme(sw.dataset.theme, true));
   });
