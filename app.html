@@ -131,16 +131,12 @@
     background: none;
     border: none;
     color: var(--ink-faint);
-    padding: 11px 4px 9px;
-    font-size: 10.5px;
+    padding: 14px 4px;
+    font-size: 11.5px;
+    font-weight: 500;
     letter-spacing: 0.02em;
     cursor: pointer;
-    display:flex;
-    flex-direction: column;
-    align-items:center;
-    gap: 4px;
   }
-  .nav-item .nav-icon{ font-size: 18px; }
   .nav-item.active{ color: var(--savings); }
 
   /* ---------- Profile cluster ---------- */
@@ -155,7 +151,10 @@
   .profile-btn-icon{
     width: 34px; height: 34px; border-radius: 50%;
     background: var(--surface-2); border: 1px solid var(--line);
-    display:flex; align-items:center; justify-content:center; font-size: 15px; flex-shrink: 0;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 13px; font-weight: 600; color: var(--savings);
+    font-family: 'IBM Plex Mono', monospace;
+    flex-shrink: 0;
   }
 
   /* ---------- Onboarding ---------- */
@@ -167,7 +166,7 @@
   .onboarding-panel h2{ font-family:'Fraunces',serif; font-weight:500; font-size:21px; margin: 4px 0 22px; }
 
   /* ---------- Welcome block ---------- */
-  .welcome-block{ min-height: 34px; margin-bottom: 26px; }
+  .welcome-block{ min-height: 90px; margin-bottom: 22px; }
   .welcome-type{
     font-family: 'Fraunces', serif;
     font-weight: 500;
@@ -184,19 +183,25 @@
   }
   @keyframes blink{ 50%{ opacity: 0; } }
   .welcome-type.fade-out{ opacity: 0; transition: opacity 0.4s ease; }
-  .insight-cards{
-    display:flex; gap: 12px; flex-wrap: wrap;
-    opacity: 0; transform: translateY(6px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+
+  .insight-slider{
+    position: relative;
+    height: 90px;
+    overflow: hidden;
   }
-  .insight-cards.visible{ opacity: 1; transform: translateY(0); }
-  .insight-card{
-    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
-    padding: 13px 16px; font-size: 13px; color: var(--ink-dim);
-    display:flex; align-items:center; gap: 10px; flex: 1; min-width: 220px;
+  .insight-line{
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    font-size: 22px;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    opacity: 0;
+    transform: translateY(28px);
+    max-width: 720px;
   }
-  .insight-card .insight-icon{ font-size: 16px; flex-shrink: 0; }
-  .insight-card b{ color: var(--ink); font-weight: 600; }
+  .insight-line b{ font-weight: 600; }
 
   /* ---------- Settings page ---------- */
   .back-btn{
@@ -238,7 +243,10 @@
   .settings-item[open] summary::after{ transform: rotate(-90deg); }
   .settings-item[open] summary{ border-bottom: 1px solid var(--line); }
   .settings-icon{
-    font-size: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--savings);
     width: 40px; height: 40px;
     border-radius: 8px;
     background: var(--surface-2);
@@ -476,7 +484,7 @@
   <select id="periodSelect" class="period-select"></select>
   <button class="profile-cluster" id="profileBtn" title="Profile & Settings">
     <span class="profile-name" id="profileNameLabel"></span>
-    <span class="profile-btn-icon">👤</span>
+    <span class="profile-btn-icon" id="profileAvatar"></span>
   </button>
 </header>
 
@@ -516,7 +524,7 @@
   <section id="page-dashboard" class="page active">
     <div id="welcomeBlock" class="welcome-block">
       <p id="welcomeType" class="welcome-type"></p>
-      <div id="insightCards" class="insight-cards"></div>
+      <div id="insightSlider" class="insight-slider"></div>
     </div>
 
     <h1 class="page-title" id="periodLabel">This Month</h1>
@@ -793,10 +801,10 @@
 
 <!-- Bottom nav -->
 <nav class="bottom-nav">
-  <button class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span>Dashboard</button>
-  <button class="nav-item" data-page="transactions"><span class="nav-icon">💳</span>Transactions</button>
-  <button class="nav-item" data-page="goals"><span class="nav-icon">🎯</span>Goals &amp; Life</button>
-  <button class="nav-item" data-page="analytics"><span class="nav-icon">📈</span>Analytics</button>
+  <button class="nav-item active" data-page="dashboard">Dashboard</button>
+  <button class="nav-item" data-page="transactions">Transactions</button>
+  <button class="nav-item" data-page="goals">Goals &amp; Life</button>
+  <button class="nav-item" data-page="analytics">Analytics</button>
 </nav>
 
 <!-- ================= SETTINGS ================= -->
@@ -806,7 +814,7 @@
     <h1 class="page-title">Profile &amp; Settings</h1>
 
     <details class="settings-item" open>
-      <summary><span class="settings-icon">🔒</span><span class="settings-text"><span class="settings-title">Security</span><span class="settings-desc">Password, log out</span></span></summary>
+      <summary><span class="settings-icon">S</span><span class="settings-text"><span class="settings-title">Security</span><span class="settings-desc">Password, log out</span></span></summary>
       <div class="settings-body">
         <h3>Change Password</h3>
         <form id="passwordForm">
@@ -827,14 +835,14 @@
     </details>
 
     <details class="settings-item">
-      <summary><span class="settings-icon">🏦</span><span class="settings-text"><span class="settings-title">Bank Sync</span><span class="settings-desc">Connect a bank account</span></span></summary>
+      <summary><span class="settings-icon">B</span><span class="settings-text"><span class="settings-title">Bank Sync</span><span class="settings-desc">Connect a bank account</span></span></summary>
       <div class="settings-body">
         <div class="placeholder-card">Coming soon — securely connect your bank account via Open Banking (Plaid, Teller, or GoCardless) to import transactions automatically. This requires a backend server and is planned for a later phase.</div>
       </div>
     </details>
 
     <details class="settings-item">
-      <summary><span class="settings-icon">🎨</span><span class="settings-text"><span class="settings-title">Appearance</span><span class="settings-desc">Color theme</span></span></summary>
+      <summary><span class="settings-icon">A</span><span class="settings-text"><span class="settings-title">Appearance</span><span class="settings-desc">Color theme</span></span></summary>
       <div class="settings-body">
         <div class="theme-swatches">
           <div class="swatch-col">
@@ -854,7 +862,7 @@
     </details>
 
     <details class="settings-item">
-      <summary><span class="settings-icon">💱</span><span class="settings-text"><span class="settings-title">Currency</span><span class="settings-desc">Base currency, converter, rates</span></span></summary>
+      <summary><span class="settings-icon">C</span><span class="settings-text"><span class="settings-title">Currency</span><span class="settings-desc">Base currency, converter, rates</span></span></summary>
       <div class="settings-body">
         <h3>Base Currency</h3>
         <select id="baseCurrencySelect" style="margin-bottom: 20px;"></select>
@@ -892,6 +900,8 @@
 
   let currentUser = null;
   let userName = "";
+  let lastPeriod = null;
+  let lastActualTx = [];
   let allPeriods = [];
   let openingBalance = 0;
   let baseCurrency = "USD";
@@ -946,6 +956,8 @@
       lastMainPage = pageId;
       document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.page === pageId));
     }
+    if (pageId === "analytics") renderAnalyticsCharts();
+    if (pageId === "goals") { loadHoldings(); updateGrowthCalculator(); }
   }
   document.querySelectorAll(".nav-item").forEach(btn => {
     btn.addEventListener("click", () => showPage(btn.dataset.page));
@@ -1036,6 +1048,7 @@
   function updateProfileLabel() {
     const firstName = userName.split(" ")[0];
     document.getElementById("profileNameLabel").textContent = firstName;
+    document.getElementById("profileAvatar").textContent = firstName ? firstName[0].toUpperCase() : "";
   }
 
   async function saveOnboarding(e) {
@@ -1078,17 +1091,57 @@
           el.classList.add("fade-out");
           setTimeout(() => { el.style.display = "none"; }, 400);
           await renderInsightCards();
-          document.getElementById("insightCards").classList.add("visible");
         }, 1100);
       }
     }, 45);
   }
 
   async function renderInsightCards() {
-    const container = document.getElementById("insightCards");
     const insights = await computeInsights();
-    if (insights.length === 0) { container.innerHTML = ""; return; }
-    container.innerHTML = insights.map(i => `<div class="insight-card"><span class="insight-icon">${i.icon}</span><span>${i.html}</span></div>`).join("");
+    startInsightSlider(insights);
+  }
+
+  let insightList = [];
+  let insightIndex = 0;
+  let insightTimer = null;
+
+  function startInsightSlider(list) {
+    clearTimeout(insightTimer);
+    insightList = list;
+    insightIndex = 0;
+    const container = document.getElementById("insightSlider");
+    container.innerHTML = "";
+    if (list.length === 0) return;
+    const el = document.createElement("p");
+    el.className = "insight-line";
+    el.id = "insightLineEl";
+    container.appendChild(el);
+    showInsightStep();
+  }
+
+  function showInsightStep() {
+    const el = document.getElementById("insightLineEl");
+    if (!el || insightList.length === 0) return;
+    const item = insightList[insightIndex];
+    el.innerHTML = item.html;
+    el.style.color = item.color;
+    el.style.transition = "none";
+    el.style.transform = "translateY(28px)";
+    el.style.opacity = "0";
+    void el.offsetWidth;
+    el.style.transition = "transform 0.65s cubic-bezier(.22,.68,0,1.01), opacity 0.5s ease";
+    el.style.transform = "translateY(0)";
+    el.style.opacity = "1";
+
+    insightTimer = setTimeout(() => {
+      el.style.transition = "transform 0.55s cubic-bezier(.5,0,.85,0), opacity 0.45s ease";
+      el.style.transform = "translateY(-28px)";
+      el.style.opacity = "0";
+      insightTimer = setTimeout(() => {
+        insightIndex = (insightIndex + 1) % insightList.length;
+        showInsightStep();
+      }, 550);
+    }, 4500);
   }
 
   async function computeInsights() {
@@ -1096,6 +1149,8 @@
     const today = new Date();
     const iso = (d) => d.toISOString().slice(0, 10);
     const daysAgo = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return d; };
+    const cssVar = (name) => getComputedStyle(document.body).getPropertyValue(name).trim();
+    const COLOR_UP = cssVar("--income"), COLOR_DOWN = cssVar("--expense"), COLOR_GOAL = cssVar("--savings"), COLOR_NEUTRAL = cssVar("--ink");
 
     const { data: last60, error } = await supabaseClient
       .from("transactions").select("type, category, amount, currency, transaction_date")
@@ -1114,7 +1169,7 @@
     if (incomePrior30 > 0) {
       const pct = ((incomeLast30 - incomePrior30) / incomePrior30) * 100;
       if (Math.abs(pct) >= 3) {
-        insights.push({ icon: pct >= 0 ? "📈" : "📉", html: `Your income is <b>${Math.abs(pct).toFixed(0)}% ${pct >= 0 ? "higher" : "lower"}</b> than the previous 30 days.` });
+        insights.push({ color: pct >= 0 ? COLOR_UP : COLOR_DOWN, html: `Your income is <b>${Math.abs(pct).toFixed(0)}% ${pct >= 0 ? "higher" : "lower"}</b> than the previous 30 days.` });
       }
     }
 
@@ -1132,7 +1187,7 @@
       if (prior7Amt > 0) {
         const pct = ((last7Amt - prior7Amt) / prior7Amt) * 100;
         if (Math.abs(pct) >= 5) {
-          insights.push({ icon: pct <= 0 ? "🎉" : "⚠️", html: `Your spending on <b>${cat}</b> is <b>${Math.abs(pct).toFixed(0)}% ${pct <= 0 ? "lower" : "higher"}</b> than last week.` });
+          insights.push({ color: pct <= 0 ? COLOR_UP : COLOR_DOWN, html: `Your spending on <b>${cat}</b> is <b>${Math.abs(pct).toFixed(0)}% ${pct <= 0 ? "lower" : "higher"}</b> than last week.` });
         }
       }
     }
@@ -1149,10 +1204,10 @@
           const daysNeeded = Math.ceil(remaining / dailyPace);
           const months = Math.floor(daysNeeded / 30);
           const days = daysNeeded % 30;
-          insights.push({ icon: "🎯", html: `At your current pace, you're about <b>${months > 0 ? months + "mo " : ""}${days}d</b> from hitting this month's savings goal.` });
+          insights.push({ color: COLOR_GOAL, html: `At your current pace, you're about <b>${months > 0 ? months + "mo " : ""}${days}d</b> from hitting this month's savings goal.` });
         }
       } else {
-        insights.push({ icon: "✅", html: `You've already hit your savings target for this period — nice work.` });
+        insights.push({ color: COLOR_UP, html: `You've already hit your savings target for this period — nice work.` });
       }
     }
 
@@ -1163,12 +1218,12 @@
       const thisMonthTx = last60.filter(t => t.transaction_date >= monthStart);
 
       if (thisMonthTx.length > 0) {
-        insights.push({ icon: "📝", html: `You've logged <b>${thisMonthTx.length}</b> transaction${thisMonthTx.length === 1 ? "" : "s"} so far this month.` });
+        insights.push({ color: COLOR_NEUTRAL, html: `You've logged <b>${thisMonthTx.length}</b> transaction${thisMonthTx.length === 1 ? "" : "s"} so far this month.` });
       }
 
       const incomeSoFar = sumIn(thisMonthTx, t => t.type === "income");
       if (incomeSoFar > 0 && insights.length < 3) {
-        insights.push({ icon: "💰", html: `You've earned <b>${fmt(incomeSoFar)}</b> so far this month.` });
+        insights.push({ color: COLOR_UP, html: `You've earned <b>${fmt(incomeSoFar)}</b> so far this month.` });
       }
 
       const expenseTotals = {};
@@ -1177,11 +1232,11 @@
       });
       const topExpense = Object.entries(expenseTotals).sort((a, b) => b[1] - a[1])[0];
       if (topExpense && insights.length < 3) {
-        insights.push({ icon: "🏷️", html: `<b>${topExpense[0]}</b> is your biggest expense category this month at <b>${fmt(topExpense[1])}</b>.` });
+        insights.push({ color: COLOR_NEUTRAL, html: `<b>${topExpense[0]}</b> is your biggest expense category this month at <b>${fmt(topExpense[1])}</b>.` });
       }
 
       if (last60.length === 0 && insights.length === 0) {
-        insights.push({ icon: "👋", html: `Add your first transaction to start seeing personalized insights here.` });
+        insights.push({ color: COLOR_NEUTRAL, html: `Add your first transaction to start seeing personalized insights here.` });
       }
     }
 
@@ -1325,7 +1380,10 @@
 
     const ctx = document.getElementById("calcChart").getContext("2d");
     if (calcChart) calcChart.destroy();
-    const calcPointDelay = balances.length > 1 ? 1200 / balances.length : 0;
+    const calcPointDelay = balances.length > 1 ? 1700 / balances.length : 0;
+    const calcPreviousY = (ctx2) => ctx2.index === 0
+      ? ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0])
+      : ctx2.chart.getDatasetMeta(ctx2.datasetIndex).data[ctx2.index - 1].getProps(["y"], true).y;
     calcChart = new Chart(ctx, {
       type: "line",
       data: { labels: labels.map(y => "Yr " + y), datasets: [{ label: "Balance", data: balances, borderColor: "#8FBF6F", backgroundColor: "#8FBF6F22", fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
@@ -1335,12 +1393,12 @@
           x: {
             type: "number", easing: "linear", duration: calcPointDelay,
             from: NaN,
-            delay(ctx2) { return ctx2.type === "data" ? ctx2.index * calcPointDelay : 0; }
+            delay(ctx2) { if (ctx2.type !== "data" || ctx2.xStarted) return 0; ctx2.xStarted = true; return ctx2.index * calcPointDelay; }
           },
           y: {
             type: "number", easing: "linear", duration: calcPointDelay,
-            from: (ctx2) => ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0]),
-            delay(ctx2) { return ctx2.type === "data" ? ctx2.index * calcPointDelay : 0; }
+            from: calcPreviousY,
+            delay(ctx2) { if (ctx2.type !== "data" || ctx2.yStarted) return 0; ctx2.yStarted = true; return ctx2.index * calcPointDelay; }
           }
         },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => fmt(item.parsed.y) } } },
@@ -1679,8 +1737,11 @@
 
     const ctx = document.getElementById("balanceTrendChart").getContext("2d");
     const lineColor = totalChange >= 0 ? "#8FBF6F" : "#D64933";
-    const totalDrawTime = 1200;
+    const totalDrawTime = 1700;
     const pointDelay = balances.length > 1 ? totalDrawTime / balances.length : 0;
+    const previousY = (ctx2) => ctx2.index === 0
+      ? ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0])
+      : ctx2.chart.getDatasetMeta(ctx2.datasetIndex).data[ctx2.index - 1].getProps(["y"], true).y;
     if (trendChart) trendChart.destroy();
     trendChart = new Chart(ctx, {
       type: "line",
@@ -1691,12 +1752,12 @@
           x: {
             type: "number", easing: "linear", duration: pointDelay,
             from: NaN,
-            delay(ctx2) { return ctx2.type === "data" ? ctx2.index * pointDelay : 0; }
+            delay(ctx2) { if (ctx2.type !== "data" || ctx2.xStarted) return 0; ctx2.xStarted = true; return ctx2.index * pointDelay; }
           },
           y: {
             type: "number", easing: "linear", duration: pointDelay,
-            from: (ctx2) => ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0]),
-            delay(ctx2) { return ctx2.type === "data" ? ctx2.index * pointDelay : 0; }
+            from: previousY,
+            delay(ctx2) { if (ctx2.type !== "data" || ctx2.yStarted) return 0; ctx2.yStarted = true; return ctx2.index * pointDelay; }
           }
         },
         plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => `Day ${items[0].label}`, label: (item) => fmt(item.parsed.y) } } },
@@ -1735,15 +1796,10 @@
     const totals = computeExpenseTotals(transactions);
     const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
     const donutCanvas = document.getElementById("expenseDonutChart");
-    const donutCanvas2 = document.getElementById("expenseDonutChart2");
-    const barCanvas = document.getElementById("expenseBarChart");
 
     if (grandTotal === 0) {
       if (donutChart) { donutChart.destroy(); donutChart = null; }
-      if (donutChart2) { donutChart2.destroy(); donutChart2 = null; }
-      if (barChart) { barChart.destroy(); barChart = null; }
       document.getElementById("breakdownLegend").innerHTML = '<p class="empty-state" style="padding: 0;">No expenses yet.</p>';
-      document.getElementById("breakdownLegend2").innerHTML = '<p class="empty-state" style="padding: 0;">No expenses logged yet for this period.</p>';
       return;
     }
 
@@ -1753,17 +1809,41 @@
     const colors = sorted.map(c => CATEGORY_COLORS[c.category]);
 
     renderLegend("breakdownLegend", sorted, grandTotal);
-    renderLegend("breakdownLegend2", sorted, grandTotal);
 
-    const donutOpts = {
+    if (donutChart) donutChart.destroy();
+    donutChart = new Chart(donutCanvas.getContext("2d"), {
       type: "doughnut",
       data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "var(--surface)", borderWidth: 2 }] },
       options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
-    };
-    if (donutChart) donutChart.destroy();
-    donutChart = new Chart(donutCanvas.getContext("2d"), donutOpts);
+    });
+  }
+
+  function renderAnalyticsExpenseCharts(transactions) {
+    const totals = computeExpenseTotals(transactions);
+    const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+    const donutCanvas2 = document.getElementById("expenseDonutChart2");
+    const barCanvas = document.getElementById("expenseBarChart");
+
+    if (grandTotal === 0) {
+      if (donutChart2) { donutChart2.destroy(); donutChart2 = null; }
+      if (barChart) { barChart.destroy(); barChart = null; }
+      document.getElementById("breakdownLegend2").innerHTML = '<p class="empty-state" style="padding: 0;">No expenses logged yet for this period.</p>';
+      return;
+    }
+
+    const sorted = EXPENSE_CATEGORIES.map(c => ({ category: c, amount: totals[c] })).filter(c => c.amount > 0).sort((a, b) => b.amount - a.amount);
+    const labels = sorted.map(c => c.category);
+    const values = sorted.map(c => Number(c.amount.toFixed(2)));
+    const colors = sorted.map(c => CATEGORY_COLORS[c.category]);
+
+    renderLegend("breakdownLegend2", sorted, grandTotal);
+
     if (donutChart2) donutChart2.destroy();
-    donutChart2 = new Chart(donutCanvas2.getContext("2d"), donutOpts);
+    donutChart2 = new Chart(donutCanvas2.getContext("2d"), {
+      type: "doughnut",
+      data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "var(--surface)", borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+    });
 
     if (barChart) barChart.destroy();
     barChart = new Chart(barCanvas.getContext("2d"), {
@@ -1897,10 +1977,23 @@
     document.getElementById("comparisonNote").textContent = anyBudgetSet ? "" : "No budget set for this period yet — set one in Transactions & Budget to see variance here.";
 
     renderTxList(current.slice(0, 12));
-    await renderBalanceTrend(period, actualTx);
-    renderCalendar(period, actualTx);
-    renderPlannedActualChart(actualTx);
+    lastPeriod = period;
+    lastActualTx = actualTx;
     renderExpenseBreakdown(actualTx);
+    if (isPageActive("analytics")) await renderAnalyticsCharts();
+  }
+
+  function isPageActive(id) {
+    const el = document.getElementById(`page-${id}`);
+    return el && el.classList.contains("active");
+  }
+
+  async function renderAnalyticsCharts() {
+    if (!lastPeriod) return;
+    await renderBalanceTrend(lastPeriod, lastActualTx);
+    renderCalendar(lastPeriod, lastActualTx);
+    renderPlannedActualChart(lastActualTx);
+    renderAnalyticsExpenseCharts(lastActualTx);
   }
 
   function renderTxList(transactions) {
