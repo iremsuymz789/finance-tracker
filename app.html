@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ledger — Dashboard</title>
+<title>Reach — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -79,6 +79,11 @@
     font-size: 19px;
     letter-spacing: -0.01em;
     flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--ink);
+    cursor: pointer;
+    padding: 0;
   }
   .brand span{ color: var(--savings); }
   .period-select{
@@ -91,18 +96,6 @@
     font-size: 12.5px;
     max-width: 200px;
   }
-  .profile-btn{
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    color: var(--ink);
-    font-size: 16px;
-    cursor: pointer;
-    display:flex; align-items:center; justify-content:center;
-    flex-shrink: 0;
-  }
-  .profile-btn:hover{ border-color: var(--savings); }
 
   .page-container{ max-width: 1100px; margin: 0 auto; padding: 28px 24px 40px; }
   .page{ display:none; }
@@ -149,6 +142,61 @@
   }
   .nav-item .nav-icon{ font-size: 18px; }
   .nav-item.active{ color: var(--savings); }
+
+  /* ---------- Profile cluster ---------- */
+  .profile-cluster{
+    display:flex; align-items:center; gap: 10px;
+    background: none; border: none; cursor: pointer;
+    padding: 4px 4px 4px 10px;
+    border-radius: 20px;
+  }
+  .profile-cluster:hover{ background: var(--surface); }
+  .profile-name{ font-size: 13px; color: var(--ink-dim); white-space: nowrap; }
+  .profile-btn-icon{
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--surface-2); border: 1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size: 15px; flex-shrink: 0;
+  }
+
+  /* ---------- Onboarding ---------- */
+  .overlay{ position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 60; display:flex; align-items:center; justify-content:center; padding: 20px; }
+  .onboarding-panel{
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 32px; width: 100%; max-width: 420px;
+  }
+  .onboarding-panel h2{ font-family:'Fraunces',serif; font-weight:500; font-size:21px; margin: 4px 0 22px; }
+
+  /* ---------- Welcome block ---------- */
+  .welcome-block{ min-height: 34px; margin-bottom: 26px; }
+  .welcome-type{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 26px;
+    color: var(--ink);
+    margin: 0;
+    min-height: 34px;
+  }
+  .welcome-type.typing::after{
+    content: "|";
+    color: var(--savings);
+    animation: blink 0.9s step-start infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink{ 50%{ opacity: 0; } }
+  .welcome-type.fade-out{ opacity: 0; transition: opacity 0.4s ease; }
+  .insight-cards{
+    display:flex; gap: 12px; flex-wrap: wrap;
+    opacity: 0; transform: translateY(6px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .insight-cards.visible{ opacity: 1; transform: translateY(0); }
+  .insight-card{
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 13px 16px; font-size: 13px; color: var(--ink-dim);
+    display:flex; align-items:center; gap: 10px; flex: 1; min-width: 220px;
+  }
+  .insight-card .insight-icon{ font-size: 16px; flex-shrink: 0; }
+  .insight-card b{ color: var(--ink); font-weight: 600; }
 
   /* ---------- Settings page ---------- */
   .back-btn{
@@ -424,15 +472,53 @@
 <body>
 
 <header class="topbar">
-  <div class="brand">Ledger<span>.</span></div>
+  <button class="brand" id="brandHome" title="Go to Dashboard">Reach<span>.</span></button>
   <select id="periodSelect" class="period-select"></select>
-  <button class="profile-btn" id="profileBtn" title="Profile & Settings">👤</button>
+  <button class="profile-cluster" id="profileBtn" title="Profile & Settings">
+    <span class="profile-name" id="profileNameLabel"></span>
+    <span class="profile-btn-icon">👤</span>
+  </button>
 </header>
+
+<!-- Onboarding modal -->
+<div class="overlay" id="onboardingOverlay" style="display:none;">
+  <div class="onboarding-panel">
+    <p class="section-label">Welcome to Reach</p>
+    <h2>Let's set up your profile</h2>
+    <form id="onboardingForm">
+      <div class="form-row"><div>
+        <label for="onbName">Your name</label>
+        <input type="text" id="onbName" placeholder="What should we call you?" required>
+      </div></div>
+      <div class="form-row"><div>
+        <label for="onbOccupation">Occupation</label>
+        <input type="text" id="onbOccupation" placeholder="e.g. YouTuber, freelance designer…" required>
+      </div></div>
+      <div class="form-row"><div>
+        <label for="onbGoal">Why are you using Reach?</label>
+        <select id="onbGoal" required>
+          <option value="Reaching financial goals">Reaching financial goals</option>
+          <option value="Tracking my budget and spending">Tracking my budget and spending</option>
+          <option value="Managing creator income">Managing creator income</option>
+          <option value="Building savings and investments">Building savings and investments</option>
+          <option value="Other">Other</option>
+        </select>
+      </div></div>
+      <button type="submit" class="submit-btn">Get Started</button>
+      <p class="form-msg" id="onboardingMsg"></p>
+    </form>
+  </div>
+</div>
 
 <main class="page-container">
 
   <!-- ================= DASHBOARD ================= -->
   <section id="page-dashboard" class="page active">
+    <div id="welcomeBlock" class="welcome-block">
+      <p id="welcomeType" class="welcome-type"></p>
+      <div id="insightCards" class="insight-cards"></div>
+    </div>
+
     <h1 class="page-title" id="periodLabel">This Month</h1>
 
     <div class="banner">
@@ -805,6 +891,7 @@
   const HOLDING_COLORS = ["#8FBF6F", "#E8B84B", "#6FA8BF", "#BF6F8F", "#A88FBF", "#D98E51", "#6FBF9E", "#C97B84", "#6F8FBF", "#BFA76F"];
 
   let currentUser = null;
+  let userName = "";
   let allPeriods = [];
   let openingBalance = 0;
   let baseCurrency = "USD";
@@ -830,6 +917,23 @@
   }
   function rateRelativeToBase(curr) { return curr === baseCurrency ? 1 : (exchangeRates[curr] || null); }
   function todayISO() { return new Date().toISOString().slice(0, 10); }
+
+  const animatedValues = {};
+  function animateNumber(elId, target, duration = 800) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const start = animatedValues[elId] || 0;
+    const startTime = performance.now();
+    function tick(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = start + (target - start) * eased;
+      el.textContent = fmt(current);
+      if (progress < 1) requestAnimationFrame(tick);
+      else { el.textContent = fmt(target); animatedValues[elId] = target; }
+    }
+    requestAnimationFrame(tick);
+  }
 
   // ---------- Navigation ----------
   let lastMainPage = "dashboard";
@@ -905,6 +1009,8 @@
     ["calcInitial", "calcMonthly", "calcRate", "calcYears"].forEach(id => {
       document.getElementById(id).addEventListener("input", updateGrowthCalculator);
     });
+    document.getElementById("brandHome").addEventListener("click", () => showPage("dashboard"));
+    document.getElementById("onboardingForm").addEventListener("submit", saveOnboarding);
 
     buildBudgetCategoryInputs();
     await loadOpeningBalance();
@@ -917,7 +1023,140 @@
     updateGrowthCalculator();
     loadTotalSaved();
     loadHoldings();
-    loadDashboard();
+    await loadDashboard();
+
+    if (!userName) {
+      document.getElementById("onboardingOverlay").style.display = "flex";
+    } else {
+      updateProfileLabel();
+      runWelcomeSequence();
+    }
+  }
+
+  function updateProfileLabel() {
+    const firstName = userName.split(" ")[0];
+    document.getElementById("profileNameLabel").textContent = firstName;
+  }
+
+  async function saveOnboarding(e) {
+    e.preventDefault();
+    const msg = document.getElementById("onboardingMsg");
+    msg.className = "form-msg";
+    const name = document.getElementById("onbName").value.trim();
+    const occupation = document.getElementById("onbOccupation").value.trim();
+    const goal = document.getElementById("onbGoal").value;
+    if (!name) { msg.className = "form-msg error"; msg.textContent = "Please enter your name."; return; }
+
+    const { error } = await supabaseClient.from("user_settings").upsert({
+      user_id: currentUser.id, opening_balance: openingBalance, base_currency: baseCurrency,
+      full_name: name, occupation, primary_goal: goal
+    });
+    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
+
+    userName = name;
+    document.getElementById("onboardingOverlay").style.display = "none";
+    updateProfileLabel();
+    runWelcomeSequence();
+  }
+
+  // ---------- Welcome sequence ----------
+  function runWelcomeSequence() {
+    const el = document.getElementById("welcomeType");
+    const firstName = userName.split(" ")[0];
+    const text = `Welcome, ${firstName}.`;
+    el.textContent = "";
+    el.classList.add("typing");
+    el.classList.remove("fade-out");
+    let i = 0;
+    const interval = setInterval(() => {
+      el.textContent += text[i];
+      i++;
+      if (i >= text.length) {
+        clearInterval(interval);
+        el.classList.remove("typing");
+        setTimeout(async () => {
+          el.classList.add("fade-out");
+          setTimeout(() => { el.style.display = "none"; }, 400);
+          await renderInsightCards();
+          document.getElementById("insightCards").classList.add("visible");
+        }, 1100);
+      }
+    }, 45);
+  }
+
+  async function renderInsightCards() {
+    const container = document.getElementById("insightCards");
+    const insights = await computeInsights();
+    if (insights.length === 0) { container.innerHTML = ""; return; }
+    container.innerHTML = insights.map(i => `<div class="insight-card"><span class="insight-icon">${i.icon}</span><span>${i.html}</span></div>`).join("");
+  }
+
+  async function computeInsights() {
+    const insights = [];
+    const today = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    const daysAgo = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return d; };
+
+    const { data: last60, error } = await supabaseClient
+      .from("transactions").select("type, category, amount, currency, transaction_date")
+      .eq("status", "actual")
+      .gte("transaction_date", iso(daysAgo(60)))
+      .lte("transaction_date", iso(today));
+    if (error || !last60) return insights;
+
+    const sumIn = (arr, filterFn) => arr.filter(filterFn).reduce((a, t) => a + toBase(Number(t.amount), t.currency || "USD"), 0);
+
+    // 1. Income trend: last 30 days vs prior 30 days
+    const last30Start = iso(daysAgo(30));
+    const prior30Start = iso(daysAgo(60));
+    const incomeLast30 = sumIn(last60, t => t.type === "income" && t.transaction_date >= last30Start);
+    const incomePrior30 = sumIn(last60, t => t.type === "income" && t.transaction_date >= prior30Start && t.transaction_date < last30Start);
+    if (incomePrior30 > 0) {
+      const pct = ((incomeLast30 - incomePrior30) / incomePrior30) * 100;
+      if (Math.abs(pct) >= 3) {
+        insights.push({ icon: pct >= 0 ? "📈" : "📉", html: `Your income is <b>${Math.abs(pct).toFixed(0)}% ${pct >= 0 ? "higher" : "lower"}</b> than the previous 30 days.` });
+      }
+    }
+
+    // 2. Top expense category trend: last 7 days vs prior 7 days
+    const last7Start = iso(daysAgo(7));
+    const prior7Start = iso(daysAgo(14));
+    const catTotalsLast7 = {};
+    last60.filter(t => t.type === "expense" && t.transaction_date >= last7Start).forEach(t => {
+      catTotalsLast7[t.category] = (catTotalsLast7[t.category] || 0) + toBase(Number(t.amount), t.currency || "USD");
+    });
+    const topCat = Object.entries(catTotalsLast7).sort((a, b) => b[1] - a[1])[0];
+    if (topCat) {
+      const [cat, last7Amt] = topCat;
+      const prior7Amt = sumIn(last60, t => t.type === "expense" && t.category === cat && t.transaction_date >= prior7Start && t.transaction_date < last7Start);
+      if (prior7Amt > 0) {
+        const pct = ((last7Amt - prior7Amt) / prior7Amt) * 100;
+        if (Math.abs(pct) >= 5) {
+          insights.push({ icon: pct <= 0 ? "🎉" : "⚠️", html: `Your spending on <b>${cat}</b> is <b>${Math.abs(pct).toFixed(0)}% ${pct <= 0 ? "lower" : "higher"}</b> than last week.` });
+        }
+      }
+    }
+
+    // 3. Savings goal pace for current period
+    const period = document.getElementById("periodSelect").value;
+    if (currentBudgets.savings > 0) {
+      const savedSoFar = sumIn(last60, t => t.type === "savings" && t.transaction_date >= monthBounds(period).start);
+      const remaining = currentBudgets.savings - savedSoFar;
+      if (remaining > 0) {
+        const daysIntoMonth = Math.max(today.getDate(), 1);
+        const dailyPace = savedSoFar / daysIntoMonth;
+        if (dailyPace > 0) {
+          const daysNeeded = Math.ceil(remaining / dailyPace);
+          const months = Math.floor(daysNeeded / 30);
+          const days = daysNeeded % 30;
+          insights.push({ icon: "🎯", html: `At your current pace, you're about <b>${months > 0 ? months + "mo " : ""}${days}d</b> from hitting this month's savings goal.` });
+        }
+      } else {
+        insights.push({ icon: "✅", html: `You've already hit your savings target for this period — nice work.` });
+      }
+    }
+
+    return insights.slice(0, 3);
   }
 
   function populateHoldingCurrency() {
@@ -988,7 +1227,7 @@
     holdingsChart = new Chart(ctx, {
       type: "doughnut",
       data: { labels: converted.map(h => h.name), datasets: [{ data: converted.map(h => Number(h.amount.toFixed(2))), backgroundColor: converted.map(h => h.color), borderColor: "var(--surface)", borderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: true, animateRotate: true, duration: 900, easing: "easeOutCubic" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
     });
 
     holdings.forEach(h => {
@@ -1264,10 +1503,11 @@
   }
 
   async function loadOpeningBalance() {
-    const { data, error } = await supabaseClient.from("user_settings").select("opening_balance, base_currency").eq("user_id", currentUser.id).maybeSingle();
+    const { data, error } = await supabaseClient.from("user_settings").select("opening_balance, base_currency, full_name, occupation, primary_goal").eq("user_id", currentUser.id).maybeSingle();
     if (error) { console.error(error); return; }
     openingBalance = data ? Number(data.opening_balance) : 0;
     baseCurrency = data && data.base_currency ? data.base_currency : "USD";
+    userName = (data && data.full_name) || "";
     document.getElementById("openingBalanceInput").value = openingBalance.toFixed(2);
   }
   async function saveOpeningBalance() {
@@ -1462,7 +1702,7 @@
     const donutOpts = {
       type: "doughnut",
       data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "var(--surface)", borderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: true, animateRotate: true, duration: 900, easing: "easeOutCubic" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
     };
     if (donutChart) donutChart.destroy();
     donutChart = new Chart(donutCanvas.getContext("2d"), donutOpts);
@@ -1565,10 +1805,10 @@
     const curr = summarize(actualTx);
     const runningBalance = await computeRunningBalance(period);
 
-    document.getElementById("bannerIncome").textContent = fmt(curr.income);
-    document.getElementById("bannerExpense").textContent = fmt(curr.totalExpenses);
-    document.getElementById("bannerSavings").textContent = fmt(curr.savings);
-    document.getElementById("bannerBalance").textContent = fmt(runningBalance);
+    animateNumber("bannerIncome", curr.income);
+    animateNumber("bannerExpense", curr.totalExpenses);
+    animateNumber("bannerSavings", curr.savings);
+    animateNumber("bannerBalance", runningBalance);
 
     document.getElementById("flowIncome").textContent = fmt(curr.income);
     document.getElementById("flowVariable").textContent = "-" + fmt(curr.variable);
