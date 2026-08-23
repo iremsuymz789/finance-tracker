@@ -22,6 +22,32 @@
     --debt: #C97B84;
     --line: rgba(237,232,222,0.12);
   }
+  body[data-theme="midnight"]{
+    --bg: #0D1220;
+    --surface: #161E30;
+    --surface-2: #1C2740;
+    --ink: #E9EDF7;
+    --ink-dim: #98A2BE;
+    --ink-faint: #626E8C;
+    --income: #7FC8A9;
+    --expense: #E0667A;
+    --savings: #7FA8D9;
+    --debt: #C99BD9;
+    --line: rgba(233,237,247,0.12);
+  }
+  body[data-theme="sand"]{
+    --bg: #F4EFE6;
+    --surface: #FFFFFF;
+    --surface-2: #EFE7D8;
+    --ink: #2B241A;
+    --ink-dim: #6E6252;
+    --ink-faint: #9B8F7C;
+    --income: #5F8F52;
+    --expense: #C15139;
+    --savings: #B9852B;
+    --debt: #9E5E6E;
+    --line: rgba(43,36,26,0.12);
+  }
   *{ box-sizing: border-box; }
   body{
     margin:0;
@@ -29,47 +55,58 @@
     color: var(--ink);
     font-family: 'IBM Plex Sans', sans-serif;
     min-height: 100vh;
+    padding-bottom: 78px;
   }
   .num{ font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+  button{ font-family: inherit; }
 
-  /* ---------- Header ---------- */
-  header{
+  /* ---------- Top bar ---------- */
+  .topbar{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding: 20px 40px;
+    padding: 16px 24px;
     border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 20;
+    gap: 14px;
   }
   .brand{
     font-family: 'Fraunces', serif;
     font-weight: 600;
-    font-size: 20px;
+    font-size: 19px;
     letter-spacing: -0.01em;
+    flex-shrink: 0;
   }
   .brand span{ color: var(--savings); }
-  .header-right{ display:flex; align-items:center; gap: 18px; }
-  select, .period-select{
+  .period-select{
     background: var(--surface);
     color: var(--ink);
     border: 1px solid var(--line);
     border-radius: 3px;
     padding: 8px 10px;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
+    font-size: 12.5px;
+    max-width: 200px;
   }
-  .logout-btn{
-    background: none;
+  .profile-btn{
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface-2);
     border: 1px solid var(--line);
-    color: var(--ink-dim);
-    border-radius: 3px;
-    padding: 8px 14px;
-    font-size: 13px;
+    color: var(--ink);
+    font-size: 16px;
     cursor: pointer;
-    font-family: 'IBM Plex Sans', sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink: 0;
   }
-  .logout-btn:hover{ color: var(--ink); border-color: var(--ink-dim); }
+  .profile-btn:hover{ border-color: var(--savings); }
 
-  main{ max-width: 1100px; margin: 0 auto; padding: 36px 40px 80px; }
+  main.page-container{ max-width: 1100px; margin: 0 auto; padding: 28px 24px 40px; }
+  .page{ display:none; }
+  .page.active{ display:block; }
 
   .section-label{
     font-family: 'IBM Plex Mono', monospace;
@@ -79,8 +116,137 @@
     color: var(--ink-faint);
     margin: 0 0 14px;
   }
+  h1.page-title{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 22px;
+    margin: 0 0 24px;
+  }
 
-  /* ---------- Top banner ---------- */
+  /* ---------- Bottom nav ---------- */
+  .bottom-nav{
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    display:flex;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    z-index: 30;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .nav-item{
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    padding: 11px 4px 9px;
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    display:flex;
+    flex-direction: column;
+    align-items:center;
+    gap: 4px;
+  }
+  .nav-item .nav-icon{ font-size: 18px; }
+  .nav-item.active{ color: var(--savings); }
+
+  /* ---------- Overlay (Profile hub) ---------- */
+  .overlay{
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 50;
+    display:flex;
+    justify-content: flex-end;
+  }
+  .overlay.hidden{ display:none; }
+  .overlay-panel{
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg);
+    height: 100%;
+    overflow-y: auto;
+    padding: 24px;
+    border-left: 1px solid var(--line);
+    position: relative;
+  }
+  .close-btn{
+    position: absolute;
+    top: 20px; right: 20px;
+    background: none; border: none;
+    color: var(--ink-dim);
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .close-btn:hover{ color: var(--ink); }
+  .overlay-panel h2{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 20px;
+    margin: 0 30px 22px 0;
+  }
+  .profile-tabs{
+    display:flex;
+    gap: 6px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .profile-tab-btn{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .profile-tab-btn.active{ color: var(--bg); background: var(--savings); border-color: var(--savings); }
+  .profile-section{ display:none; }
+  .profile-section.active{ display:block; }
+  .profile-section h3{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 15.5px;
+    margin: 0 0 14px;
+  }
+
+  .theme-swatches{ display:flex; gap: 12px; margin-bottom: 6px; }
+  .theme-swatch{
+    width: 62px; height: 62px;
+    border-radius: 6px;
+    border: 2px solid var(--line);
+    cursor: pointer;
+    display:flex; flex-direction: column; overflow:hidden;
+  }
+  .theme-swatch.selected{ border-color: var(--savings); }
+  .theme-swatch > div{ flex:1; }
+  .swatch-label{ text-align:center; font-size: 11px; color: var(--ink-dim); margin-top: 6px; }
+  .swatch-col{ display:flex; flex-direction: column; align-items:center; }
+
+  .rates-table{ width: 100%; font-size: 12.5px; margin-top: 12px; border-collapse: collapse; }
+  .rates-table td{ padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--ink-dim); }
+  .rates-table td:last-child{ text-align: right; color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+
+  .placeholder-card{
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    border-radius: 5px;
+    padding: 20px;
+    color: var(--ink-faint);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  /* ---------- Shared panel / form styles ---------- */
+  .panel{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 24px 26px;
+    margin-bottom: 24px;
+  }
+  .panel h2{ font-family: 'Fraunces', serif; font-weight: 500; font-size: 17px; margin: 0 0 20px; }
+
   .banner{
     display:grid;
     grid-template-columns: repeat(4, 1fr);
@@ -89,266 +255,65 @@
     border: 1px solid var(--line);
     border-radius: 5px;
     overflow: hidden;
-    margin-bottom: 40px;
+    margin-bottom: 24px;
   }
-  .banner-cell{
-    background: var(--surface);
-    padding: 22px 24px;
-    position: relative;
-  }
+  .banner-cell{ background: var(--surface); padding: 20px 22px; }
   .banner-cell .label{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-dim);
-    margin: 0 0 10px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-dim); margin: 0 0 8px;
   }
-  .banner-cell .value{
-    font-family: 'Fraunces', serif;
-    font-weight: 500;
-    font-size: 30px;
-    letter-spacing: -0.01em;
-  }
+  .banner-cell .value{ font-family: 'Fraunces', serif; font-weight: 500; font-size: 26px; letter-spacing: -0.01em; }
   .banner-cell.income .value{ color: var(--income); }
   .banner-cell.expense .value{ color: var(--expense); }
   .banner-cell.savings .value{ color: var(--savings); }
   .banner-cell.balance .value{ color: var(--ink); }
   .banner-cell.balance{ background: var(--surface-2); }
-  .banner-cell .sub{ font-size: 12px; color: var(--ink-faint); margin-top: 6px; }
+  .banner-cell .sub{ font-size: 11px; color: var(--ink-faint); margin-top: 5px; }
 
-  /* ---------- Two-column layout ---------- */
-  .grid-2{
-    display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    gap: 24px;
-    margin-bottom: 40px;
-    align-items: start;
-  }
-  .panel{
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 5px;
-    padding: 24px 26px;
-  }
-  .panel h2{
-    font-family: 'Fraunces', serif;
-    font-weight: 500;
-    font-size: 17px;
-    margin: 0 0 20px;
-  }
+  .grid-2{ display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; margin-bottom: 24px; align-items: start; }
 
-  /* ---------- Cash flow waterfall ---------- */
-  .flow-row{
-    display:flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 11px 0;
-    border-bottom: 1px dashed var(--line);
-    font-size: 14px;
-  }
+  .flow-row{ display:flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
   .flow-row:last-of-type{ border-bottom: none; }
   .flow-row .flow-label{ color: var(--ink-dim); }
-  .flow-row .flow-val{ font-size: 14px; }
   .flow-row.add .flow-val{ color: var(--income); }
   .flow-row.sub .flow-val{ color: var(--expense); }
-  .flow-row.total{
-    margin-top: 8px;
-    padding-top: 16px;
-    border-top: 1px solid var(--line);
-    border-bottom: none;
-  }
+  .flow-row.total{ margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); border-bottom: none; }
   .flow-row.total .flow-label{ color: var(--ink); font-weight: 600; }
-  .flow-row.total .flow-val{ font-size: 19px; font-weight: 600; }
+  .flow-row.total .flow-val{ font-size: 17px; font-weight: 600; }
 
-  /* ---------- Trend panel ---------- */
-  .trend-panel{ margin-bottom: 40px; }
-  .trend-head{
-    display:flex;
-    align-items:flex-start;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .trend-stats{ display:flex; gap: 28px; }
-  .trend-stat .t-label{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10.5px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    margin: 0 0 4px;
-  }
-  .trend-stat .t-val{ font-size: 16px; font-weight: 600; }
-  .trend-stat .t-val.burn{ color: var(--expense); }
-  .trend-stat .t-val.recover{ color: var(--income); }
-  .balance-setting{
-    display:flex; align-items:center; gap: 8px;
-    font-size: 12.5px; color: var(--ink-dim);
-  }
-  .balance-setting input{
-    width: 110px;
-    padding: 6px 8px;
-    font-size: 12.5px;
-  }
-  .balance-setting button{
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    color: var(--ink);
-    border-radius: 3px;
-    padding: 6px 12px;
-    font-size: 12px;
-    cursor: pointer;
-  }
-  .balance-setting button:hover{ border-color: var(--savings); }
-  .chart-wrap{ height: 260px; position: relative; }
-
-  /* ---------- Expense breakdown ---------- */
-  .breakdown-grid{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 28px;
-    align-items: center;
-  }
-  .breakdown-chart{ height: 240px; position: relative; }
-  .breakdown-legend{ display:flex; flex-direction: column; gap: 10px; }
-  .legend-row{
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    font-size: 13.5px;
-  }
-  .legend-left{ display:flex; align-items:center; gap: 9px; }
-  .legend-dot{ width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
-  .legend-cat{ color: var(--ink); }
-  .legend-pct{ color: var(--ink-faint); font-size: 12px; margin-left: 6px; }
-  .legend-amt{ font-size: 13.5px; }
-
-  /* ---------- Budget form ---------- */
-  .budget-grid{
-    display:grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px 20px;
-    margin-bottom: 18px;
-  }
-  .budget-field label{ font-size: 12.5px; }
-  .budget-field .cat-tag{
-    display:inline-block;
-    width: 8px; height: 8px;
-    border-radius: 2px;
-    margin-right: 6px;
-  }
-  .budget-actions{ display:flex; align-items:center; gap: 14px; }
-  .budget-actions .submit-btn{ width: auto; padding: 11px 24px; }
-  .copy-link{
-    background:none; border:none; color: var(--ink-dim);
-    font-size: 12.5px; text-decoration: underline; cursor: pointer; padding:0;
-  }
-  .copy-link:hover{ color: var(--savings); }
-
-  /* ---------- Calendar ---------- */
-  .calendar-grid{
-    display:grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-  }
-  .cal-dow{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    text-align: center;
-    padding-bottom: 6px;
-  }
-  .cal-day{
-    aspect-ratio: 1;
-    border-radius: 4px;
-    border: 1px solid var(--line);
-    background: var(--bg);
-    padding: 6px 7px;
-    display:flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: 56px;
-  }
-  .cal-day.empty{ border: none; background: none; }
-  .cal-day .cal-num{ font-size: 11px; color: var(--ink-faint); }
-  .cal-day .cal-net{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    font-weight: 600;
-    text-align: right;
-  }
-  .cal-day.positive .cal-net{ color: var(--income); }
-  .cal-day.negative .cal-net{ color: var(--expense); }
-  .cal-day.today{ border-color: var(--savings); }
-
-  /* ---------- Comparison table ---------- */
-  table{ width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table{ width: 100%; border-collapse: collapse; font-size: 13px; }
   th{
-    text-align: right;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 500;
-    font-size: 10.5px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--line);
+    text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 10px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); padding-bottom: 9px; border-bottom: 1px solid var(--line);
   }
   th:first-child, td:first-child{ text-align: left; }
-  td{ text-align: right; padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--ink); }
+  td{ text-align: right; padding: 9px 0; border-bottom: 1px solid var(--line); color: var(--ink); }
   tr:last-child td{ border-bottom: none; }
   .variance-up{ color: var(--income); }
   .variance-down{ color: var(--expense); }
 
-  /* ---------- Form ---------- */
-  .form-row{ display: flex; gap: 10px; margin-bottom: 12px; }
-  .form-row > div{ flex: 1; }
+  .form-row{ display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .form-row > div{ flex: 1; min-width: 110px; }
   label{ display:block; font-size: 12px; color: var(--ink-dim); margin-bottom: 5px; }
   input, select{
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    padding: 9px 10px;
-    color: var(--ink);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
+    width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 3px;
+    padding: 9px 10px; color: var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 13px;
   }
   input:focus, select:focus{ outline: none; border-color: var(--savings); }
   .checkbox-row{ display:flex; align-items:center; gap: 8px; margin: 4px 0 16px; }
   .checkbox-row input{ width: auto; }
   .checkbox-row label{ margin: 0; color: var(--ink-dim); font-size: 13px; }
   .submit-btn{
-    width: 100%;
-    background: var(--savings);
-    color: #16210F;
-    border: none;
-    border-radius: 3px;
-    padding: 12px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    font-family: 'IBM Plex Sans', sans-serif;
+    width: 100%; background: var(--savings); color: #16210F; border: none; border-radius: 3px;
+    padding: 12px; font-weight: 600; font-size: 14px; cursor: pointer;
   }
   .submit-btn:hover{ opacity: 0.88; }
+  .submit-btn:disabled{ opacity: 0.4; cursor: default; }
   .form-msg{ font-size: 12.5px; margin-top: 10px; min-height: 16px; }
   .form-msg.error{ color: var(--expense); }
   .form-msg.ok{ color: var(--income); }
 
-  /* ---------- Recent transactions ---------- */
-  .tx-list{ margin-top: 40px; }
-  .tx-row{
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    padding: 13px 0;
-    border-bottom: 1px solid var(--line);
-    font-size: 14px;
-  }
+  .tx-row{ display:flex; align-items:center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
   .tx-left{ display:flex; align-items:center; gap: 12px; }
   .tx-dot{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .tx-dot.income{ background: var(--income); }
@@ -358,249 +323,370 @@
   .tx-cat{ color: var(--ink); }
   .tx-date{ color: var(--ink-faint); font-size: 12px; margin-left: 8px; }
   .tx-desc{ color: var(--ink-faint); font-size: 12.5px; margin-top: 2px; }
-  .tx-amt{ font-size: 14px; }
-  .tx-del{
-    background: none; border: none; color: var(--ink-faint);
-    cursor: pointer; font-size: 12px; margin-left: 14px;
-  }
+  .tx-amt{ font-size: 13.5px; }
+  .tx-del{ background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 12px; margin-left: 12px; }
   .tx-del:hover{ color: var(--expense); }
   .empty-state{ color: var(--ink-faint); font-size: 13.5px; padding: 20px 0; text-align: center; }
+
+  .breakdown-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
+  .breakdown-chart{ height: 220px; position: relative; }
+  .breakdown-legend{ display:flex; flex-direction: column; gap: 9px; }
+  .legend-row{ display:flex; align-items:center; justify-content: space-between; font-size: 13px; }
+  .legend-left{ display:flex; align-items:center; gap: 9px; }
+  .legend-dot{ width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .legend-pct{ color: var(--ink-faint); font-size: 11.5px; margin-left: 6px; }
+
+  .chart-wrap{ height: 240px; position: relative; }
+  .trend-head{ display:flex; align-items:flex-start; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+  .trend-stats{ display:flex; gap: 26px; }
+  .trend-stat .t-label{ font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 4px; }
+  .trend-stat .t-val{ font-size: 15px; font-weight: 600; }
+  .trend-stat .t-val.burn{ color: var(--expense); }
+  .trend-stat .t-val.recover{ color: var(--income); }
+  .balance-setting{ display:flex; align-items:center; gap: 8px; font-size: 12px; color: var(--ink-dim); flex-wrap: wrap; }
+  .balance-setting input{ width: 100px; padding: 6px 8px; font-size: 12px; }
+  .balance-setting button{ background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); border-radius: 3px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+  .balance-setting button:hover{ border-color: var(--savings); }
+
+  .budget-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px 18px; margin-bottom: 16px; }
+  .budget-field label{ font-size: 12px; }
+  .budget-field .cat-tag{ display:inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+  .budget-actions{ display:flex; align-items:center; gap: 14px; flex-wrap: wrap; }
+  .budget-actions .submit-btn{ width: auto; padding: 11px 22px; }
+  .copy-link{ background:none; border:none; color: var(--ink-dim); font-size: 12px; text-decoration: underline; cursor: pointer; padding:0; }
+  .copy-link:hover{ color: var(--savings); }
+
+  .calendar-grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .cal-dow{ font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); text-align: center; padding-bottom: 5px; }
+  .cal-day{ aspect-ratio: 1; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); padding: 5px 6px; display:flex; flex-direction: column; justify-content: space-between; min-height: 48px; }
+  .cal-day.empty{ border: none; background: none; }
+  .cal-day .cal-num{ font-size: 10.5px; color: var(--ink-faint); }
+  .cal-day .cal-net{ font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; text-align: right; }
+  .cal-day.positive .cal-net{ color: var(--income); }
+  .cal-day.negative .cal-net{ color: var(--expense); }
+  .cal-day.today{ border-color: var(--savings); }
+
+  .filter-pills{ display:flex; gap: 8px; margin-bottom: 22px; overflow-x: auto; padding-bottom: 4px; }
+  .filter-pill{ background: var(--surface); border: 1px solid var(--line); color: var(--ink-dim); border-radius: 20px; padding: 8px 16px; font-size: 12.5px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .filter-pill.active{ color: var(--bg); background: var(--savings); border-color: var(--savings); }
+  .goal-pane{ display:none; }
+  .goal-pane.active{ display:block; }
 
   @media (max-width: 800px){
     .banner{ grid-template-columns: 1fr 1fr; }
     .grid-2{ grid-template-columns: 1fr; }
     .breakdown-grid{ grid-template-columns: 1fr; }
     .budget-grid{ grid-template-columns: 1fr; }
-    .cal-day{ min-height: 44px; padding: 4px 5px; }
-    .cal-day .cal-net{ font-size: 9.5px; }
-    main{ padding: 28px 20px 60px; }
-    header{ padding: 16px 20px; }
+    .cal-day{ min-height: 40px; padding: 4px 5px; }
+    .cal-day .cal-net{ font-size: 9px; }
+    main.page-container{ padding: 22px 16px 40px; }
+    .topbar{ padding: 14px 16px; }
+    .overlay-panel{ max-width: 100%; }
   }
 </style>
 </head>
 <body>
 
-<header>
+<header class="topbar">
   <div class="brand">Ledger<span>.</span></div>
-  <div class="header-right">
-    <select id="periodSelect" class="period-select"></select>
-    <button class="logout-btn" id="logoutBtn">Log out</button>
-  </div>
+  <select id="periodSelect" class="period-select"></select>
+  <button class="profile-btn" id="profileBtn" title="Profile & Settings">👤</button>
 </header>
 
-<main>
-  <p class="section-label" id="periodLabel">This Month</p>
+<main class="page-container">
 
-  <!-- Top banner -->
-  <div class="banner">
-    <div class="banner-cell income">
-      <p class="label">Total Income</p>
-      <p class="value num" id="bannerIncome">$0.00</p>
-    </div>
-    <div class="banner-cell expense">
-      <p class="label">Total Expenses</p>
-      <p class="value num" id="bannerExpense">$0.00</p>
-    </div>
-    <div class="banner-cell savings">
-      <p class="label">Savings &amp; Investments</p>
-      <p class="value num" id="bannerSavings">$0.00</p>
-    </div>
-    <div class="banner-cell balance">
-      <p class="label">Remaining Balance</p>
-      <p class="value num" id="bannerBalance">$0.00</p>
-      <p class="sub">Carried forward automatically</p>
-    </div>
-  </div>
+  <!-- ================= DASHBOARD ================= -->
+  <section id="page-dashboard" class="page active">
+    <h1 class="page-title" id="periodLabel">This Month</h1>
 
-  <!-- Daily balance trend -->
-  <div class="panel trend-panel">
-    <div class="trend-head">
-      <div>
-        <h2 style="margin-bottom: 10px;">Daily Balance Trend</h2>
-        <div class="trend-stats">
-          <div class="trend-stat">
-            <p class="t-label">Avg. Daily Change</p>
-            <p class="t-val num" id="trendAvgChange">$0.00</p>
-          </div>
-          <div class="trend-stat">
-            <p class="t-label">Burn Rate Outlook</p>
-            <p class="t-val" id="trendOutlook">—</p>
-          </div>
+    <div class="banner">
+      <div class="banner-cell income">
+        <p class="label">Total Income</p>
+        <p class="value num" id="bannerIncome">$0.00</p>
+      </div>
+      <div class="banner-cell expense">
+        <p class="label">Total Expenses</p>
+        <p class="value num" id="bannerExpense">$0.00</p>
+      </div>
+      <div class="banner-cell savings">
+        <p class="label">Savings &amp; Investments</p>
+        <p class="value num" id="bannerSavings">$0.00</p>
+      </div>
+      <div class="banner-cell balance">
+        <p class="label">Remaining Balance</p>
+        <p class="value num" id="bannerBalance">$0.00</p>
+        <p class="sub">Carried forward automatically</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel" style="margin-bottom:0;">
+        <h2>Cash Flow Breakdown</h2>
+        <div class="flow-row"><span class="flow-label">Incoming Revenue</span><span class="flow-val num" id="flowIncome">$0.00</span></div>
+        <div class="flow-row sub"><span class="flow-label">− Variable Expenses</span><span class="flow-val num" id="flowVariable">$0.00</span></div>
+        <div class="flow-row sub"><span class="flow-label">− Fixed Expenses</span><span class="flow-val num" id="flowFixed">$0.00</span></div>
+        <div class="flow-row sub"><span class="flow-label">− Debt Obligations</span><span class="flow-val num" id="flowDebt">$0.00</span></div>
+        <div class="flow-row sub"><span class="flow-label">− Allocated Savings &amp; Investments</span><span class="flow-val num" id="flowSavings">$0.00</span></div>
+        <div class="flow-row total"><span class="flow-label">Net Change This Period</span><span class="flow-val num" id="flowNet">$0.00</span></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:0;">
+        <h2>Expense Snapshot</h2>
+        <div class="breakdown-chart" style="height:180px;">
+          <canvas id="expenseDonutChart"></canvas>
         </div>
-      </div>
-      <div class="balance-setting">
-        <span>Base currency:</span>
-        <select id="baseCurrencySelect" style="width: 78px;"></select>
-        <span style="margin-left: 6px;">Starting balance:</span>
-        <input type="number" id="openingBalanceInput" step="0.01" placeholder="0.00">
-        <button id="saveOpeningBalance">Save</button>
-      </div>
-    </div>
-    <p id="rateWarning" style="display:none; font-size:12px; color: var(--expense); margin: -12px 0 16px;">
-      Couldn't fetch live exchange rates — amounts in other currencies are shown at face value until this reconnects.
-    </p>
-    <div class="chart-wrap">
-      <canvas id="balanceTrendChart"></canvas>
-    </div>
-  </div>
-
-  <div class="grid-2">
-    <!-- Cash flow waterfall -->
-    <div class="panel">
-      <h2>Cash Flow Breakdown</h2>
-      <div class="flow-row">
-        <span class="flow-label">Incoming Revenue</span>
-        <span class="flow-val num" id="flowIncome">$0.00</span>
-      </div>
-      <div class="flow-row sub">
-        <span class="flow-label">− Variable Expenses</span>
-        <span class="flow-val num" id="flowVariable">$0.00</span>
-      </div>
-      <div class="flow-row sub">
-        <span class="flow-label">− Fixed Expenses</span>
-        <span class="flow-val num" id="flowFixed">$0.00</span>
-      </div>
-      <div class="flow-row sub">
-        <span class="flow-label">− Debt Obligations</span>
-        <span class="flow-val num" id="flowDebt">$0.00</span>
-      </div>
-      <div class="flow-row sub">
-        <span class="flow-label">− Allocated Savings &amp; Investments</span>
-        <span class="flow-val num" id="flowSavings">$0.00</span>
-      </div>
-      <div class="flow-row total">
-        <span class="flow-label">Net Change This Period</span>
-        <span class="flow-val num" id="flowNet">$0.00</span>
+        <div class="breakdown-legend" id="breakdownLegend" style="margin-top:16px;"></div>
       </div>
     </div>
 
-    <!-- Monthly comparison -->
-    <div class="panel">
+    <div class="panel" style="margin-bottom:0;">
       <h2>Budget vs. Actual</h2>
       <table>
-        <thead>
-          <tr><th>Category</th><th>Budgeted</th><th>Actual</th><th>Variance</th></tr>
-        </thead>
-        <tbody id="comparisonBody">
-        </tbody>
+        <thead><tr><th>Category</th><th>Budgeted</th><th>Actual</th><th>Variance</th></tr></thead>
+        <tbody id="comparisonBody"></tbody>
       </table>
       <p style="font-size:11.5px; color: var(--ink-faint); margin: 16px 0 0;" id="comparisonNote"></p>
     </div>
-  </div>
+  </section>
 
-  <!-- Monthly calendar -->
-  <div class="panel" style="margin-bottom: 40px;">
-    <h2>Monthly Calendar</h2>
-    <div class="calendar-grid" id="calendarGrid"></div>
-  </div>
+  <!-- ================= TRANSACTIONS & BUDGET ================= -->
+  <section id="page-transactions" class="page">
+    <h1 class="page-title">Transactions &amp; Budget</h1>
 
-  <!-- Set budget -->
-  <div class="panel" style="margin-bottom: 40px;">
-    <h2>Set Budget for This Period</h2>
-    <p class="form-msg" id="budgetLockNote" style="display:none; color: var(--ink-dim); margin-bottom: 14px;"></p>
-    <form id="budgetForm">
-      <div class="budget-grid">
-        <div class="budget-field">
-          <label for="budgetIncome">Income Target</label>
-          <input type="number" id="budgetIncome" min="0" step="0.01" placeholder="0.00">
+    <div class="panel">
+      <h2>Add a Transaction</h2>
+      <p class="form-msg" id="txLockNote" style="display:none; color: var(--ink-dim); margin-bottom: 14px;"></p>
+      <form id="txForm">
+        <div class="form-row">
+          <div>
+            <label for="txType">Type</label>
+            <select id="txType" required>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+              <option value="savings">Savings / Investment</option>
+              <option value="debt">Debt Payment</option>
+            </select>
+          </div>
+          <div>
+            <label for="txCategory">Category</label>
+            <select id="txCategory" required></select>
+          </div>
         </div>
-        <div class="budget-field">
-          <label for="budgetSavings">Savings Target</label>
-          <input type="number" id="budgetSavings" min="0" step="0.01" placeholder="0.00">
+        <div class="form-row">
+          <div>
+            <label for="txAmount">Amount</label>
+            <input type="number" id="txAmount" min="0" step="0.01" placeholder="0.00" required>
+          </div>
+          <div>
+            <label for="txCurrency">Currency</label>
+            <select id="txCurrency" required></select>
+          </div>
+          <div>
+            <label for="txDate">Date</label>
+            <input type="date" id="txDate" required>
+          </div>
         </div>
-        <div class="budget-field">
-          <label for="budgetDebt">Debt Payment Target</label>
-          <input type="number" id="budgetDebt" min="0" step="0.01" placeholder="0.00">
+        <div class="checkbox-row" id="fixedRow">
+          <input type="checkbox" id="txFixed">
+          <label for="txFixed">This is a fixed / recurring cost</label>
         </div>
-        <div></div>
-      </div>
-      <p class="section-label" style="margin: 4px 0 12px;">Expense Budgets by Category</p>
-      <div class="budget-grid" id="budgetCategoryGrid"></div>
-      <div class="budget-actions">
-        <button type="submit" class="submit-btn">Save Budget</button>
-        <button type="button" class="copy-link" id="copyLastBudget">Copy last period's budget</button>
-      </div>
-      <p class="form-msg" id="budgetMsg"></p>
-    </form>
-  </div>
-
-  <!-- Planned vs actual chart -->
-  <div class="panel" style="margin-bottom: 40px;">
-    <h2>Planned vs. Actual Spending by Category</h2>
-    <div class="chart-wrap" style="height: 260px;">
-      <canvas id="plannedActualChart"></canvas>
+        <div class="form-row">
+          <div>
+            <label for="txDesc">Description (optional)</label>
+            <input type="text" id="txDesc" placeholder="e.g. Rent, YouTube ad revenue…">
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Add transaction</button>
+        <p class="form-msg" id="formMsg"></p>
+      </form>
     </div>
-  </div>
 
-  <!-- Expense breakdown -->
-  <div class="panel" style="margin-bottom: 40px;">
-    <h2>Expense Breakdown</h2>
-    <div class="breakdown-grid" id="breakdownGrid">
-      <div class="breakdown-chart">
-        <canvas id="expenseDonutChart"></canvas>
-      </div>
-      <div class="breakdown-legend" id="breakdownLegend"></div>
+    <div class="panel">
+      <p class="section-label">Recent Transactions</p>
+      <div id="txListBody"></div>
     </div>
-    <div class="chart-wrap" style="height: 220px; margin-top: 28px;">
-      <canvas id="expenseBarChart"></canvas>
+
+    <div class="panel">
+      <h2>Set Budget for This Period</h2>
+      <p class="form-msg" id="budgetLockNote" style="display:none; color: var(--ink-dim); margin-bottom: 14px;"></p>
+      <form id="budgetForm">
+        <div class="budget-grid">
+          <div class="budget-field"><label for="budgetIncome">Income Target</label><input type="number" id="budgetIncome" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="budget-field"><label for="budgetSavings">Savings Target</label><input type="number" id="budgetSavings" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="budget-field"><label for="budgetDebt">Debt Payment Target</label><input type="number" id="budgetDebt" min="0" step="0.01" placeholder="0.00"></div>
+          <div></div>
+        </div>
+        <p class="section-label" style="margin: 4px 0 12px;">Expense Budgets by Category</p>
+        <div class="budget-grid" id="budgetCategoryGrid"></div>
+        <div class="budget-actions">
+          <button type="submit" class="submit-btn" style="width:auto;">Save Budget</button>
+          <button type="button" class="copy-link" id="copyLastBudget">Copy last period's budget</button>
+        </div>
+        <p class="form-msg" id="budgetMsg"></p>
+      </form>
     </div>
-  </div>
 
-  <!-- Add transaction -->
-  <div class="panel">
-    <h2>Add a Transaction</h2>
-    <p class="form-msg" id="txLockNote" style="display:none; color: var(--ink-dim); margin-bottom: 14px;"></p>
-    <form id="txForm">
-      <div class="form-row">
-        <div>
-          <label for="txType">Type</label>
-          <select id="txType" required>
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
-            <option value="savings">Savings / Investment</option>
-            <option value="debt">Debt Payment</option>
-          </select>
-        </div>
-        <div>
-          <label for="txCategory">Category</label>
-          <select id="txCategory" required></select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div>
-          <label for="txAmount">Amount</label>
-          <input type="number" id="txAmount" min="0" step="0.01" placeholder="0.00" required>
-        </div>
-        <div>
-          <label for="txCurrency">Currency</label>
-          <select id="txCurrency" required></select>
-        </div>
-        <div>
-          <label for="txDate">Date</label>
-          <input type="date" id="txDate" required>
-        </div>
-      </div>
-      <div class="checkbox-row" id="fixedRow">
-        <input type="checkbox" id="txFixed">
-        <label for="txFixed">This is a fixed / recurring cost</label>
-      </div>
-      <div class="form-row">
-        <div>
-          <label for="txDesc">Description (optional)</label>
-          <input type="text" id="txDesc" placeholder="e.g. Rent, YouTube ad revenue…">
-        </div>
-      </div>
-      <button type="submit" class="submit-btn">Add transaction</button>
-      <p class="form-msg" id="formMsg"></p>
-    </form>
-  </div>
+    <div class="panel">
+      <h2>Fixed Expenses &amp; Subscriptions</h2>
+      <div class="placeholder-card">Coming soon — track rent, streaming, and software subscriptions with due-date reminders here.</div>
+    </div>
 
-  <!-- Recent transactions -->
-  <div class="tx-list">
-    <p class="section-label">Recent Transactions</p>
-    <div id="txListBody"></div>
-  </div>
+    <div class="panel" style="margin-bottom:0;">
+      <h2>Credit Card Management</h2>
+      <div class="placeholder-card">Coming soon — track limits, current charges, available credit, due dates, and utilization here.</div>
+    </div>
+  </section>
+
+  <!-- ================= GOALS & LIFE ================= -->
+  <section id="page-goals" class="page">
+    <h1 class="page-title">Goals &amp; Life</h1>
+    <div class="filter-pills" id="goalPills">
+      <button class="filter-pill active" data-pane="goal-savings">Savings Goals</button>
+      <button class="filter-pill" data-pane="goal-habits">Habit Checklist</button>
+      <button class="filter-pill" data-pane="goal-creator">Creator Metrics</button>
+    </div>
+
+    <div class="goal-pane active" id="goal-savings">
+      <div class="panel" style="margin-bottom:0;">
+        <div class="placeholder-card">Coming soon — set targets like an emergency fund, travel fund, or a specific purchase, and track progress with visual bars.</div>
+      </div>
+    </div>
+    <div class="goal-pane" id="goal-habits">
+      <div class="panel" style="margin-bottom:0;">
+        <div class="placeholder-card">Coming soon — a simple checklist for recurring money habits you want to build.</div>
+      </div>
+    </div>
+    <div class="goal-pane" id="goal-creator">
+      <div class="panel" style="margin-bottom:0;">
+        <div class="placeholder-card">Coming soon — track followers, views, engagement, and custom growth targets here.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ANALYTICS ================= -->
+  <section id="page-analytics" class="page">
+    <h1 class="page-title">Analytics</h1>
+
+    <div class="panel">
+      <div class="trend-head">
+        <div>
+          <h2 style="margin-bottom: 10px;">Daily Balance Trend</h2>
+          <div class="trend-stats">
+            <div class="trend-stat"><p class="t-label">Avg. Daily Change</p><p class="t-val num" id="trendAvgChange">$0.00</p></div>
+            <div class="trend-stat"><p class="t-label">Burn Rate Outlook</p><p class="t-val" id="trendOutlook">—</p></div>
+          </div>
+        </div>
+        <div class="balance-setting">
+          <span>Starting balance:</span>
+          <input type="number" id="openingBalanceInput" step="0.01" placeholder="0.00">
+          <button id="saveOpeningBalance">Save</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="balanceTrendChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <h2>Expense Breakdown</h2>
+      <div class="breakdown-grid">
+        <div class="breakdown-chart"><canvas id="expenseDonutChart2"></canvas></div>
+        <div class="breakdown-legend" id="breakdownLegend2"></div>
+      </div>
+      <div class="chart-wrap" style="height: 220px; margin-top: 24px;"><canvas id="expenseBarChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <h2>Planned vs. Actual Spending by Category</h2>
+      <div class="chart-wrap"><canvas id="plannedActualChart"></canvas></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:0;">
+      <h2>Monthly Calendar</h2>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+  </section>
+
 </main>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span>Dashboard</button>
+  <button class="nav-item" data-page="transactions"><span class="nav-icon">💳</span>Transactions</button>
+  <button class="nav-item" data-page="goals"><span class="nav-icon">🎯</span>Goals &amp; Life</button>
+  <button class="nav-item" data-page="analytics"><span class="nav-icon">📈</span>Analytics</button>
+</nav>
+
+<!-- Profile overlay -->
+<div class="overlay hidden" id="profileOverlay">
+  <div class="overlay-panel">
+    <button class="close-btn" id="closeProfile">&times;</button>
+    <h2>Profile &amp; Settings</h2>
+    <div class="profile-tabs">
+      <button class="profile-tab-btn active" data-tab="security">Security</button>
+      <button class="profile-tab-btn" data-tab="bank">Bank Sync</button>
+      <button class="profile-tab-btn" data-tab="appearance">Appearance</button>
+      <button class="profile-tab-btn" data-tab="currency">Currency</button>
+    </div>
+
+    <div class="profile-section active" id="tab-security">
+      <h3>Change Password</h3>
+      <form id="passwordForm">
+        <div class="form-row"><div>
+          <label for="newPassword">New Password</label>
+          <input type="password" id="newPassword" minlength="6" required>
+        </div></div>
+        <div class="form-row"><div>
+          <label for="confirmPassword">Confirm New Password</label>
+          <input type="password" id="confirmPassword" minlength="6" required>
+        </div></div>
+        <button type="submit" class="submit-btn">Update Password</button>
+        <p class="form-msg" id="passwordMsg"></p>
+      </form>
+      <h3 style="margin-top:28px;">Log Out</h3>
+      <button class="submit-btn" id="logoutBtn" style="background: var(--surface-2); color: var(--ink);">Log out</button>
+    </div>
+
+    <div class="profile-section" id="tab-bank">
+      <h3>Bank Account Sync</h3>
+      <div class="placeholder-card">Coming soon — securely connect your bank account via Open Banking (Plaid, Teller, or GoCardless) to import transactions automatically. This requires a backend server and is planned for a later phase.</div>
+    </div>
+
+    <div class="profile-section" id="tab-appearance">
+      <h3>Color Theme</h3>
+      <div class="theme-swatches">
+        <div class="swatch-col">
+          <div class="theme-swatch" data-theme="ledger" style="background:#0F1512;"><div style="background:#8FBF6F; height:33%;"></div><div style="background:#E8B84B; height:33%;"></div><div style="background:#D64933; height:34%;"></div></div>
+          <p class="swatch-label">Ledger</p>
+        </div>
+        <div class="swatch-col">
+          <div class="theme-swatch" data-theme="midnight" style="background:#0D1220;"><div style="background:#7FC8A9; height:33%;"></div><div style="background:#7FA8D9; height:33%;"></div><div style="background:#E0667A; height:34%;"></div></div>
+          <p class="swatch-label">Midnight</p>
+        </div>
+        <div class="swatch-col">
+          <div class="theme-swatch" data-theme="sand" style="background:#F4EFE6;"><div style="background:#5F8F52; height:33%;"></div><div style="background:#B9852B; height:33%;"></div><div style="background:#C15139; height:34%;"></div></div>
+          <p class="swatch-label">Sand</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-section" id="tab-currency">
+      <h3>Base Currency</h3>
+      <select id="baseCurrencySelect" style="margin-bottom: 20px;"></select>
+
+      <h3>Quick Converter</h3>
+      <div class="form-row">
+        <div><label for="calcAmount">Amount</label><input type="number" id="calcAmount" value="100" step="0.01"></div>
+      </div>
+      <div class="form-row">
+        <div><label for="calcFrom">From</label><select id="calcFrom"></select></div>
+        <div><label for="calcTo">To</label><select id="calcTo"></select></div>
+      </div>
+      <p class="form-msg ok" id="calcResult" style="font-size:15px; margin: 6px 0 20px;"></p>
+
+      <h3>Current Rates <span style="font-weight:400; color:var(--ink-faint); font-size:11.5px;">(relative to base)</span></h3>
+      <table class="rates-table" id="ratesTable"></table>
+    </div>
+  </div>
+</div>
 
 <script src="supabaseClient.js"></script>
 <script>
@@ -611,26 +697,17 @@
   const CURRENCIES = ["USD", "EUR", "GBP", "TRY", "JPY", "CAD", "AUD", "INR"];
   const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£", TRY: "₺", JPY: "¥", CAD: "$", AUD: "$", INR: "₹" };
   const CATEGORY_COLORS = {
-    Housing: "#D98E51",
-    Transport: "#6FA8BF",
-    Food: "#BF6F8F",
-    Leisure: "#A88FBF",
-    Healthcare: "#6FBF9E",
-    Shopping: "#BFA76F",
-    Education: "#6F8FBF",
-    Miscellaneous: "#8A8F87"
+    Housing: "#D98E51", Transport: "#6FA8BF", Food: "#BF6F8F", Leisure: "#A88FBF",
+    Healthcare: "#6FBF9E", Shopping: "#BFA76F", Education: "#6F8FBF", Miscellaneous: "#8A8F87"
   };
 
   let currentUser = null;
-  let allPeriods = []; // list of {value: "2026-08", label: "August 2026"}
+  let allPeriods = [];
   let openingBalance = 0;
   let baseCurrency = "USD";
-  let exchangeRates = {}; // { EUR: 0.92, TRY: 34.5, ... } meaning 1 baseCurrency = rate[X] of currency X
+  let exchangeRates = {};
   let ratesLoadFailed = false;
-  let trendChart = null;
-  let donutChart = null;
-  let barChart = null;
-  let plannedActualChart = null;
+  let trendChart = null, donutChart = null, donutChart2 = null, barChart = null, plannedActualChart = null;
   let currentBudgets = { income: 0, savings: 0, debt: 0, categories: {} };
 
   const fmt = (n) => {
@@ -638,52 +715,64 @@
     const symbol = CURRENCY_SYMBOLS[baseCurrency] || "$";
     return sign + symbol + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
-
   const fmtOriginal = (n, currency) => {
     const symbol = CURRENCY_SYMBOLS[currency] || currency + " ";
     return symbol + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
-
-  // Convert an amount from its original currency into the account's base currency
   function toBase(amount, currency) {
     if (currency === baseCurrency) return amount;
     const rate = exchangeRates[currency];
-    if (!rate) return amount; // rate missing (offline / API issue) — fall back to face value
+    if (!rate) return amount;
     return amount / rate;
   }
+  function rateRelativeToBase(curr) { return curr === baseCurrency ? 1 : (exchangeRates[curr] || null); }
+  function todayISO() { return new Date().toISOString().slice(0, 10); }
 
-  async function loadExchangeRates() {
-    try {
-      const res = await fetch(`https://api.frankfurter.dev/v1/latest?base=${baseCurrency}`);
-      if (!res.ok) throw new Error("rate fetch failed");
-      const data = await res.json();
-      exchangeRates = data.rates || {};
-      ratesLoadFailed = false;
-    } catch (err) {
-      console.error("Exchange rate fetch failed:", err);
-      exchangeRates = {};
-      ratesLoadFailed = true;
-    }
-    document.getElementById("rateWarning").style.display = ratesLoadFailed ? "block" : "none";
+  // ---------- Navigation ----------
+  function showPage(pageId) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById(`page-${pageId}`).classList.add("active");
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.page === pageId));
   }
+  document.querySelectorAll(".nav-item").forEach(btn => {
+    btn.addEventListener("click", () => showPage(btn.dataset.page));
+  });
 
-  function populateCurrencySelects() {
-    const txCurrency = document.getElementById("txCurrency");
-    const baseSelect = document.getElementById("baseCurrencySelect");
-    [txCurrency, baseSelect].forEach(sel => sel.innerHTML = "");
-    CURRENCIES.forEach(c => {
-      const opt1 = document.createElement("option");
-      opt1.value = c; opt1.textContent = c;
-      txCurrency.appendChild(opt1);
-      const opt2 = document.createElement("option");
-      opt2.value = c; opt2.textContent = c;
-      baseSelect.appendChild(opt2);
+  document.getElementById("profileBtn").addEventListener("click", () => {
+    document.getElementById("profileOverlay").classList.remove("hidden");
+  });
+  document.getElementById("closeProfile").addEventListener("click", () => {
+    document.getElementById("profileOverlay").classList.add("hidden");
+  });
+  document.querySelectorAll(".profile-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".profile-tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".profile-section").forEach(s => s.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
     });
-    txCurrency.value = baseCurrency;
-    baseSelect.value = baseCurrency;
+  });
+  document.querySelectorAll(".theme-swatch").forEach(sw => {
+    sw.addEventListener("click", () => applyTheme(sw.dataset.theme, true));
+  });
+  document.querySelectorAll(".filter-pill").forEach(p => {
+    p.addEventListener("click", () => {
+      document.querySelectorAll(".filter-pill").forEach(x => x.classList.remove("active"));
+      document.querySelectorAll(".goal-pane").forEach(x => x.classList.remove("active"));
+      p.classList.add("active");
+      document.getElementById(p.dataset.pane).classList.add("active");
+    });
+  });
+
+  function applyTheme(theme, persist) {
+    document.body.setAttribute("data-theme", theme);
+    document.querySelectorAll(".theme-swatch").forEach(s => s.classList.toggle("selected", s.dataset.theme === theme));
+    if (persist && currentUser) {
+      supabaseClient.from("user_settings").upsert({ user_id: currentUser.id, theme, opening_balance: openingBalance, base_currency: baseCurrency }).then(() => {});
+    }
   }
 
-  // ---------- Auth guard ----------
+  // ---------- Auth guard & init ----------
   async function init() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = "auth.html"; return; }
@@ -696,8 +785,7 @@
     document.getElementById("periodSelect").addEventListener("change", loadDashboard);
     document.getElementById("txType").addEventListener("change", () => {
       populateCategoryOptions();
-      document.getElementById("fixedRow").style.display =
-        document.getElementById("txType").value === "expense" ? "flex" : "none";
+      document.getElementById("fixedRow").style.display = document.getElementById("txType").value === "expense" ? "flex" : "none";
     });
     document.getElementById("fixedRow").style.display = "flex";
 
@@ -711,12 +799,38 @@
     document.getElementById("baseCurrencySelect").addEventListener("change", changeBaseCurrency);
     document.getElementById("budgetForm").addEventListener("submit", saveBudget);
     document.getElementById("copyLastBudget").addEventListener("click", copyLastPeriodBudget);
+    document.getElementById("passwordForm").addEventListener("submit", changePassword);
+    document.getElementById("calcAmount").addEventListener("input", updateCalculator);
+    document.getElementById("calcFrom").addEventListener("change", updateCalculator);
+    document.getElementById("calcTo").addEventListener("change", updateCalculator);
 
     buildBudgetCategoryInputs();
     await loadOpeningBalance();
     populateCurrencySelects();
+    applyTheme(await loadThemePreference(), false);
     await loadExchangeRates();
+    updateCalculator();
+    renderRatesTable();
     loadDashboard();
+  }
+
+  async function loadThemePreference() {
+    const { data } = await supabaseClient.from("user_settings").select("theme").eq("user_id", currentUser.id).maybeSingle();
+    return (data && data.theme) || "ledger";
+  }
+
+  async function changePassword(e) {
+    e.preventDefault();
+    const msg = document.getElementById("passwordMsg");
+    msg.className = "form-msg";
+    const pw = document.getElementById("newPassword").value;
+    const confirm = document.getElementById("confirmPassword").value;
+    if (pw !== confirm) { msg.className = "form-msg error"; msg.textContent = "Passwords don't match."; return; }
+    const { error } = await supabaseClient.auth.updateUser({ password: pw });
+    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
+    msg.className = "form-msg ok";
+    msg.textContent = "Password updated.";
+    document.getElementById("passwordForm").reset();
   }
 
   function buildBudgetCategoryInputs() {
@@ -725,131 +839,15 @@
     EXPENSE_CATEGORIES.forEach(cat => {
       const field = document.createElement("div");
       field.className = "budget-field";
-      field.innerHTML = `
-        <label for="budgetCat_${cat}">
-          <span class="cat-tag" style="background:${CATEGORY_COLORS[cat]};"></span>${cat}
-        </label>
-        <input type="number" id="budgetCat_${cat}" min="0" step="0.01" placeholder="0.00">
-      `;
+      field.innerHTML = `<label for="budgetCat_${cat}"><span class="cat-tag" style="background:${CATEGORY_COLORS[cat]};"></span>${cat}</label><input type="number" id="budgetCat_${cat}" min="0" step="0.01" placeholder="0.00">`;
       grid.appendChild(field);
     });
-  }
-
-  // ---------- Budgets ----------
-  async function loadBudgets(period) {
-    const { data, error } = await supabaseClient
-      .from("budgets")
-      .select("*")
-      .eq("period", period);
-    if (error) { console.error(error); return; }
-
-    currentBudgets = { income: 0, savings: 0, debt: 0, categories: {} };
-    (data || []).forEach(b => {
-      const amt = Number(b.planned_amount);
-      if (b.type === "expense" && b.category) currentBudgets.categories[b.category] = amt;
-      else if (b.type === "income") currentBudgets.income = amt;
-      else if (b.type === "savings") currentBudgets.savings = amt;
-      else if (b.type === "debt") currentBudgets.debt = amt;
-    });
-
-    document.getElementById("budgetIncome").value = currentBudgets.income || "";
-    document.getElementById("budgetSavings").value = currentBudgets.savings || "";
-    document.getElementById("budgetDebt").value = currentBudgets.debt || "";
-    EXPENSE_CATEGORIES.forEach(cat => {
-      const el = document.getElementById(`budgetCat_${cat}`);
-      if (el) el.value = currentBudgets.categories[cat] || "";
-    });
-  }
-
-  async function saveBudget(e) {
-    e.preventDefault();
-    const period = document.getElementById("periodSelect").value;
-    const msg = document.getElementById("budgetMsg");
-    msg.className = "form-msg";
-    msg.textContent = "";
-
-    const rows = [];
-    const income = parseFloat(document.getElementById("budgetIncome").value) || 0;
-    const savings = parseFloat(document.getElementById("budgetSavings").value) || 0;
-    const debt = parseFloat(document.getElementById("budgetDebt").value) || 0;
-    rows.push({ user_id: currentUser.id, period, type: "income", category: "Overall", planned_amount: income });
-    rows.push({ user_id: currentUser.id, period, type: "savings", category: "Overall", planned_amount: savings });
-    rows.push({ user_id: currentUser.id, period, type: "debt", category: "Overall", planned_amount: debt });
-    EXPENSE_CATEGORIES.forEach(cat => {
-      const val = parseFloat(document.getElementById(`budgetCat_${cat}`).value) || 0;
-      rows.push({ user_id: currentUser.id, period, type: "expense", category: cat, planned_amount: val });
-    });
-
-    const { error } = await supabaseClient
-      .from("budgets")
-      .upsert(rows, { onConflict: "user_id,period,type,category" });
-
-    if (error) {
-      msg.className = "form-msg error";
-      msg.textContent = error.message;
-      return;
-    }
-    msg.className = "form-msg ok";
-    msg.textContent = "Budget saved.";
-    loadDashboard();
-  }
-
-  async function copyLastPeriodBudget() {
-    const period = document.getElementById("periodSelect").value;
-    const prior = prevPeriod(period);
-    const { data, error } = await supabaseClient.from("budgets").select("*").eq("period", prior);
-    if (error || !data || data.length === 0) {
-      alert("No budget found for the previous period to copy.");
-      return;
-    }
-    data.forEach(b => {
-      if (b.type === "expense" && b.category) {
-        const el = document.getElementById(`budgetCat_${b.category}`);
-        if (el) el.value = b.planned_amount;
-      } else if (b.type === "income") document.getElementById("budgetIncome").value = b.planned_amount;
-      else if (b.type === "savings") document.getElementById("budgetSavings").value = b.planned_amount;
-      else if (b.type === "debt") document.getElementById("budgetDebt").value = b.planned_amount;
-    });
-  }
-  async function loadOpeningBalance() {
-    const { data, error } = await supabaseClient
-      .from("user_settings")
-      .select("opening_balance, base_currency")
-      .eq("user_id", currentUser.id)
-      .maybeSingle();
-    if (error) { console.error(error); return; }
-    openingBalance = data ? Number(data.opening_balance) : 0;
-    baseCurrency = data && data.base_currency ? data.base_currency : "USD";
-    document.getElementById("openingBalanceInput").value = openingBalance.toFixed(2);
-  }
-
-  async function saveOpeningBalance() {
-    const input = document.getElementById("openingBalanceInput");
-    const value = parseFloat(input.value) || 0;
-    const { error } = await supabaseClient
-      .from("user_settings")
-      .upsert({ user_id: currentUser.id, opening_balance: value, base_currency: baseCurrency, updated_at: new Date().toISOString() });
-    if (error) { alert(error.message); return; }
-    openingBalance = value;
-    loadDashboard();
-  }
-
-  async function changeBaseCurrency() {
-    baseCurrency = document.getElementById("baseCurrencySelect").value;
-    document.getElementById("txCurrency").value = baseCurrency;
-    const { error } = await supabaseClient
-      .from("user_settings")
-      .upsert({ user_id: currentUser.id, opening_balance: openingBalance, base_currency: baseCurrency, updated_at: new Date().toISOString() });
-    if (error) { alert(error.message); return; }
-    await loadExchangeRates();
-    loadDashboard();
   }
 
   function buildPeriodOptions() {
     const select = document.getElementById("periodSelect");
     const now = new Date();
-    const FUTURE_MONTHS = 6;
-    const PAST_MONTHS = 11;
+    const FUTURE_MONTHS = 6, PAST_MONTHS = 11;
     for (let offset = FUTURE_MONTHS; offset >= -PAST_MONTHS; offset--) {
       const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -857,8 +855,7 @@
       if (offset === 0) label += " (Current)";
       allPeriods.push({ value, label, offset });
       const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = label;
+      opt.value = value; opt.textContent = label;
       if (offset === 0) opt.selected = true;
       select.appendChild(opt);
     }
@@ -878,8 +875,7 @@
     catSelect.innerHTML = "";
     map[type].forEach(c => {
       const opt = document.createElement("option");
-      opt.value = c;
-      opt.textContent = c;
+      opt.value = c; opt.textContent = c;
       catSelect.appendChild(opt);
     });
   }
@@ -887,11 +883,10 @@
   function monthBounds(periodValue) {
     const [year, month] = periodValue.split("-").map(Number);
     const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 0); // last day of month
+    const end = new Date(year, month, 0);
     const toISO = (d) => d.toISOString().slice(0, 10);
     return { start: toISO(start), end: toISO(end) };
   }
-
   function prevPeriod(periodValue) {
     const [year, month] = periodValue.split("-").map(Number);
     const d = new Date(year, month - 2, 1);
@@ -901,10 +896,8 @@
   async function fetchTransactions(periodValue) {
     const { start, end } = monthBounds(periodValue);
     const { data, error } = await supabaseClient
-      .from("transactions")
-      .select("*")
-      .gte("transaction_date", start)
-      .lte("transaction_date", end)
+      .from("transactions").select("*")
+      .gte("transaction_date", start).lte("transaction_date", end)
       .order("transaction_date", { ascending: false });
     if (error) { console.error(error); return []; }
     return data;
@@ -913,50 +906,34 @@
   function netOf(transactions) {
     return transactions.reduce((total, t) => {
       const amt = toBase(Number(t.amount), t.currency || "USD");
-      if (t.type === "income") return total + amt;
-      return total - amt; // expense, savings, debt all reduce balance
+      return t.type === "income" ? total + amt : total - amt;
     }, 0);
   }
 
   async function fetchTransactionsBefore(dateISO) {
-    const { data, error } = await supabaseClient
-      .from("transactions")
-      .select("type, amount, currency, transaction_date")
-      .eq("status", "actual")
-      .lt("transaction_date", dateISO);
+    const { data, error } = await supabaseClient.from("transactions").select("type, amount, currency, transaction_date").eq("status", "actual").lt("transaction_date", dateISO);
     if (error) { console.error(error); return []; }
     return data;
   }
-
   async function fetchTransactionsUpTo(dateISO) {
-    const { data, error } = await supabaseClient
-      .from("transactions")
-      .select("type, amount, currency, transaction_date")
-      .eq("status", "actual")
-      .lte("transaction_date", dateISO);
+    const { data, error } = await supabaseClient.from("transactions").select("type, amount, currency, transaction_date").eq("status", "actual").lte("transaction_date", dateISO);
     if (error) { console.error(error); return []; }
     return data;
   }
-
-  function todayISO() { return new Date().toISOString().slice(0, 10); }
-
   async function computeRunningBalance(period) {
     const { end } = monthBounds(period);
-    const cutoff = end < todayISO() ? end : todayISO(); // never count future-dated rows
+    const cutoff = end < todayISO() ? end : todayISO();
     const upTo = await fetchTransactionsUpTo(cutoff);
     return openingBalance + netOf(upTo);
   }
 
   function applyPeriodLocking(period) {
     const status = periodStatus(period);
-
     const txLockNote = document.getElementById("txLockNote");
     if (status === "future") {
       txLockNote.style.display = "block";
       txLockNote.textContent = "Entries with a future date are logged as \"Planned\" — they won't count toward your totals until you confirm them.";
-    } else {
-      txLockNote.style.display = "none";
-    }
+    } else txLockNote.style.display = "none";
 
     const budgetForm = document.getElementById("budgetForm");
     const budgetLockNote = document.getElementById("budgetLockNote");
@@ -971,18 +948,159 @@
     }
   }
 
+  // ---------- Currency ----------
+  async function loadExchangeRates() {
+    try {
+      const res = await fetch(`https://api.frankfurter.dev/v1/latest?base=${baseCurrency}`);
+      if (!res.ok) throw new Error("rate fetch failed");
+      const data = await res.json();
+      exchangeRates = data.rates || {};
+      ratesLoadFailed = false;
+    } catch (err) {
+      console.error("Exchange rate fetch failed:", err);
+      exchangeRates = {};
+      ratesLoadFailed = true;
+    }
+  }
+
+  function populateCurrencySelects() {
+    const txCurrency = document.getElementById("txCurrency");
+    const baseSelect = document.getElementById("baseCurrencySelect");
+    const calcFrom = document.getElementById("calcFrom");
+    const calcTo = document.getElementById("calcTo");
+    [txCurrency, baseSelect, calcFrom, calcTo].forEach(sel => sel.innerHTML = "");
+    CURRENCIES.forEach(c => {
+      [txCurrency, baseSelect, calcFrom, calcTo].forEach(sel => {
+        const opt = document.createElement("option");
+        opt.value = c; opt.textContent = c;
+        sel.appendChild(opt);
+      });
+    });
+    txCurrency.value = baseCurrency;
+    baseSelect.value = baseCurrency;
+    calcFrom.value = baseCurrency;
+    calcTo.value = CURRENCIES.find(c => c !== baseCurrency) || baseCurrency;
+  }
+
+  function updateCalculator() {
+    const amount = parseFloat(document.getElementById("calcAmount").value) || 0;
+    const from = document.getElementById("calcFrom").value;
+    const to = document.getElementById("calcTo").value;
+    const rFrom = rateRelativeToBase(from);
+    const rTo = rateRelativeToBase(to);
+    const resultEl = document.getElementById("calcResult");
+    if (rFrom == null || rTo == null) { resultEl.textContent = "Rate unavailable right now."; return; }
+    const inBase = amount / rFrom;
+    const result = inBase * rTo;
+    resultEl.textContent = `${fmtOriginal(amount, from)} = ${fmtOriginal(result, to)}`;
+  }
+
+  function renderRatesTable() {
+    const table = document.getElementById("ratesTable");
+    table.innerHTML = "";
+    CURRENCIES.forEach(c => {
+      const rate = rateRelativeToBase(c);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>1 ${baseCurrency} =</td><td>${rate != null ? rate.toLocaleString("en-US", { maximumFractionDigits: 4 }) + " " + c : "—"}</td>`;
+      table.appendChild(tr);
+    });
+  }
+
+  async function loadOpeningBalance() {
+    const { data, error } = await supabaseClient.from("user_settings").select("opening_balance, base_currency").eq("user_id", currentUser.id).maybeSingle();
+    if (error) { console.error(error); return; }
+    openingBalance = data ? Number(data.opening_balance) : 0;
+    baseCurrency = data && data.base_currency ? data.base_currency : "USD";
+    document.getElementById("openingBalanceInput").value = openingBalance.toFixed(2);
+  }
+  async function saveOpeningBalance() {
+    const input = document.getElementById("openingBalanceInput");
+    const value = parseFloat(input.value) || 0;
+    const { error } = await supabaseClient.from("user_settings").upsert({ user_id: currentUser.id, opening_balance: value, base_currency: baseCurrency, updated_at: new Date().toISOString() });
+    if (error) { alert(error.message); return; }
+    openingBalance = value;
+    loadDashboard();
+  }
+  async function changeBaseCurrency() {
+    baseCurrency = document.getElementById("baseCurrencySelect").value;
+    document.getElementById("txCurrency").value = baseCurrency;
+    const { error } = await supabaseClient.from("user_settings").upsert({ user_id: currentUser.id, opening_balance: openingBalance, base_currency: baseCurrency, updated_at: new Date().toISOString() });
+    if (error) { alert(error.message); return; }
+    await loadExchangeRates();
+    updateCalculator();
+    renderRatesTable();
+    loadDashboard();
+  }
+
+  // ---------- Budgets ----------
+  async function loadBudgets(period) {
+    const { data, error } = await supabaseClient.from("budgets").select("*").eq("period", period);
+    if (error) { console.error(error); return; }
+    currentBudgets = { income: 0, savings: 0, debt: 0, categories: {} };
+    (data || []).forEach(b => {
+      const amt = Number(b.planned_amount);
+      if (b.type === "expense" && b.category) currentBudgets.categories[b.category] = amt;
+      else if (b.type === "income") currentBudgets.income = amt;
+      else if (b.type === "savings") currentBudgets.savings = amt;
+      else if (b.type === "debt") currentBudgets.debt = amt;
+    });
+    document.getElementById("budgetIncome").value = currentBudgets.income || "";
+    document.getElementById("budgetSavings").value = currentBudgets.savings || "";
+    document.getElementById("budgetDebt").value = currentBudgets.debt || "";
+    EXPENSE_CATEGORIES.forEach(cat => {
+      const el = document.getElementById(`budgetCat_${cat}`);
+      if (el) el.value = currentBudgets.categories[cat] || "";
+    });
+  }
+
+  async function saveBudget(e) {
+    e.preventDefault();
+    const period = document.getElementById("periodSelect").value;
+    const msg = document.getElementById("budgetMsg");
+    msg.className = "form-msg";
+    const rows = [];
+    const income = parseFloat(document.getElementById("budgetIncome").value) || 0;
+    const savings = parseFloat(document.getElementById("budgetSavings").value) || 0;
+    const debt = parseFloat(document.getElementById("budgetDebt").value) || 0;
+    rows.push({ user_id: currentUser.id, period, type: "income", category: "Overall", planned_amount: income });
+    rows.push({ user_id: currentUser.id, period, type: "savings", category: "Overall", planned_amount: savings });
+    rows.push({ user_id: currentUser.id, period, type: "debt", category: "Overall", planned_amount: debt });
+    EXPENSE_CATEGORIES.forEach(cat => {
+      const val = parseFloat(document.getElementById(`budgetCat_${cat}`).value) || 0;
+      rows.push({ user_id: currentUser.id, period, type: "expense", category: cat, planned_amount: val });
+    });
+    const { error } = await supabaseClient.from("budgets").upsert(rows, { onConflict: "user_id,period,type,category" });
+    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
+    msg.className = "form-msg ok";
+    msg.textContent = "Budget saved.";
+    loadDashboard();
+  }
+
+  async function copyLastPeriodBudget() {
+    const period = document.getElementById("periodSelect").value;
+    const prior = prevPeriod(period);
+    const { data, error } = await supabaseClient.from("budgets").select("*").eq("period", prior);
+    if (error || !data || data.length === 0) { alert("No budget found for the previous period to copy."); return; }
+    data.forEach(b => {
+      if (b.type === "expense" && b.category) { const el = document.getElementById(`budgetCat_${b.category}`); if (el) el.value = b.planned_amount; }
+      else if (b.type === "income") document.getElementById("budgetIncome").value = b.planned_amount;
+      else if (b.type === "savings") document.getElementById("budgetSavings").value = b.planned_amount;
+      else if (b.type === "debt") document.getElementById("budgetDebt").value = b.planned_amount;
+    });
+  }
+
+  // ---------- Rendering ----------
   async function renderBalanceTrend(period, currentMonthTx) {
     const { start } = monthBounds(period);
     const [year, month] = period.split("-").map(Number);
     const daysInMonth = new Date(year, month, 0).getDate();
     const now = new Date();
     const isCurrentPeriod = now.getFullYear() === year && (now.getMonth() + 1) === month;
-    const daysToPlot = isCurrentPeriod ? now.getDate() : daysInMonth;
+    const daysToPlot = isCurrentPeriod ? now.getDate() : (period < todayISO().slice(0,7) ? daysInMonth : 0);
 
     const priorTx = await fetchTransactionsBefore(start);
     const startingBalanceForMonth = openingBalance + netOf(priorTx);
 
-    // Bucket this month's transactions by day-of-month
     const dailyNet = new Array(daysInMonth + 1).fill(0);
     currentMonthTx.forEach(t => {
       const day = Number(t.transaction_date.split("-")[2]);
@@ -990,16 +1108,15 @@
       dailyNet[day] += (t.type === "income") ? amt : -amt;
     });
 
-    const labels = [];
-    const balances = [];
+    const labels = [], balances = [];
     let running = startingBalanceForMonth;
-    for (let d = 1; d <= daysToPlot; d++) {
+    const plotDays = daysToPlot || daysInMonth;
+    for (let d = 1; d <= plotDays; d++) {
       running += dailyNet[d];
       labels.push(d);
       balances.push(Number(running.toFixed(2)));
     }
 
-    // Burn rate stats
     const totalChange = balances.length ? balances[balances.length - 1] - startingBalanceForMonth : 0;
     const avgDaily = balances.length ? totalChange / balances.length : 0;
     document.getElementById("trendAvgChange").textContent = (avgDaily >= 0 ? "+" : "-") + fmt(Math.abs(avgDaily));
@@ -1020,55 +1137,22 @@
 
     const ctx = document.getElementById("balanceTrendChart").getContext("2d");
     const lineColor = totalChange >= 0 ? "#8FBF6F" : "#D64933";
-
     if (trendChart) trendChart.destroy();
     trendChart = new Chart(ctx, {
       type: "line",
-      data: {
-        labels,
-        datasets: [{
-          label: "Balance",
-          data: balances,
-          borderColor: lineColor,
-          backgroundColor: lineColor + "22",
-          fill: true,
-          tension: 0.25,
-          pointRadius: 0,
-          pointHoverRadius: 5,
-          borderWidth: 2
-        }]
-      },
+      data: { labels, datasets: [{ label: "Balance", data: balances, borderColor: lineColor, backgroundColor: lineColor + "22", fill: true, tension: 0.25, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              title: (items) => `Day ${items[0].label}`,
-              label: (item) => fmt(item.parsed.y)
-            }
-          }
-        },
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => `Day ${items[0].label}`, label: (item) => fmt(item.parsed.y) } } },
         scales: {
-          x: {
-            grid: { color: "rgba(237,232,222,0.06)" },
-            ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 } }
-          },
-          y: {
-            grid: { color: "rgba(237,232,222,0.06)" },
-            ticks: {
-              color: "#6C766E",
-              font: { family: "IBM Plex Mono", size: 10 },
-              callback: (val) => "$" + val.toLocaleString()
-            }
-          }
+          x: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 } } },
+          y: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val.toLocaleString() } }
         }
       }
     });
   }
 
-  function renderExpenseBreakdown(transactions) {
+  function computeExpenseTotals(transactions) {
     const expenses = transactions.filter(t => t.type === "expense");
     const totals = {};
     EXPENSE_CATEGORIES.forEach(c => totals[c] = 0);
@@ -1076,84 +1160,65 @@
       const amt = toBase(Number(t.amount), t.currency || "USD");
       totals[t.category] = (totals[t.category] || 0) + amt;
     });
+    return totals;
+  }
 
-    const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
-    const donutCanvas = document.getElementById("expenseDonutChart");
-    const barCanvas = document.getElementById("expenseBarChart");
-    const legend = document.getElementById("breakdownLegend");
-
-    if (grandTotal === 0) {
-      if (donutChart) { donutChart.destroy(); donutChart = null; }
-      if (barChart) { barChart.destroy(); barChart = null; }
-      legend.innerHTML = '<p class="empty-state" style="padding: 0;">No expenses logged yet for this period.</p>';
-      return;
-    }
-
-    // Sort categories by amount, descending, drop zero-value ones
-    const sorted = EXPENSE_CATEGORIES
-      .map(c => ({ category: c, amount: totals[c] }))
-      .filter(c => c.amount > 0)
-      .sort((a, b) => b.amount - a.amount);
-
-    const labels = sorted.map(c => c.category);
-    const values = sorted.map(c => Number(c.amount.toFixed(2)));
-    const colors = sorted.map(c => CATEGORY_COLORS[c.category]);
-
-    // Legend
+  function renderLegend(elId, sorted, grandTotal) {
+    const legend = document.getElementById(elId);
     legend.innerHTML = "";
     sorted.forEach(c => {
       const pct = ((c.amount / grandTotal) * 100).toFixed(0);
       const row = document.createElement("div");
       row.className = "legend-row";
-      row.innerHTML = `
-        <div class="legend-left">
-          <span class="legend-dot" style="background:${CATEGORY_COLORS[c.category]};"></span>
-          <span class="legend-cat">${c.category}</span>
-          <span class="legend-pct">${pct}%</span>
-        </div>
-        <span class="legend-amt num">${fmt(c.amount)}</span>
-      `;
+      row.innerHTML = `<div class="legend-left"><span class="legend-dot" style="background:${CATEGORY_COLORS[c.category]};"></span><span class="legend-cat">${c.category}</span><span class="legend-pct">${pct}%</span></div><span class="legend-amt num">${fmt(c.amount)}</span>`;
       legend.appendChild(row);
     });
+  }
 
-    // Donut chart
-    if (donutChart) donutChart.destroy();
-    donutChart = new Chart(donutCanvas.getContext("2d"), {
+  function renderExpenseBreakdown(transactions) {
+    const totals = computeExpenseTotals(transactions);
+    const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+    const donutCanvas = document.getElementById("expenseDonutChart");
+    const donutCanvas2 = document.getElementById("expenseDonutChart2");
+    const barCanvas = document.getElementById("expenseBarChart");
+
+    if (grandTotal === 0) {
+      if (donutChart) { donutChart.destroy(); donutChart = null; }
+      if (donutChart2) { donutChart2.destroy(); donutChart2 = null; }
+      if (barChart) { barChart.destroy(); barChart = null; }
+      document.getElementById("breakdownLegend").innerHTML = '<p class="empty-state" style="padding: 0;">No expenses yet.</p>';
+      document.getElementById("breakdownLegend2").innerHTML = '<p class="empty-state" style="padding: 0;">No expenses logged yet for this period.</p>';
+      return;
+    }
+
+    const sorted = EXPENSE_CATEGORIES.map(c => ({ category: c, amount: totals[c] })).filter(c => c.amount > 0).sort((a, b) => b.amount - a.amount);
+    const labels = sorted.map(c => c.category);
+    const values = sorted.map(c => Number(c.amount.toFixed(2)));
+    const colors = sorted.map(c => CATEGORY_COLORS[c.category]);
+
+    renderLegend("breakdownLegend", sorted, grandTotal);
+    renderLegend("breakdownLegend2", sorted, grandTotal);
+
+    const donutOpts = {
       type: "doughnut",
-      data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "#16211C", borderWidth: 2 }] },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "68%",
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } }
-        }
-      }
-    });
+      data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "var(--surface)", borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+    };
+    if (donutChart) donutChart.destroy();
+    donutChart = new Chart(donutCanvas.getContext("2d"), donutOpts);
+    if (donutChart2) donutChart2.destroy();
+    donutChart2 = new Chart(donutCanvas2.getContext("2d"), donutOpts);
 
-    // Horizontal bar chart
     if (barChart) barChart.destroy();
     barChart = new Chart(barCanvas.getContext("2d"), {
       type: "bar",
       data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 3, barThickness: 16 }] },
       options: {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: (item) => fmt(item.parsed.x) } }
-        },
+        indexAxis: "y", responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => fmt(item.parsed.x) } } },
         scales: {
-          x: {
-            grid: { color: "rgba(237,232,222,0.06)" },
-            ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val }
-          },
-          y: {
-            grid: { display: false },
-            ticks: { color: "#9CA89E", font: { family: "IBM Plex Sans", size: 12.5 } }
-          }
+          x: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val } },
+          y: { grid: { display: false }, ticks: { color: "#9CA89E", font: { family: "IBM Plex Sans", size: 12.5 } } }
         }
       }
     });
@@ -1162,85 +1227,52 @@
   function renderCalendar(period, transactions) {
     const [year, month] = period.split("-").map(Number);
     const daysInMonth = new Date(year, month, 0).getDate();
-    const firstWeekday = new Date(year, month - 1, 1).getDay(); // 0 = Sunday
-    const todayISO = new Date().toISOString().slice(0, 10);
-
-    // Sum net flow per day
+    const firstWeekday = new Date(year, month - 1, 1).getDay();
+    const todayStr = todayISO();
     const dailyNet = {};
     transactions.forEach(t => {
       const amt = toBase(Number(t.amount), t.currency || "USD");
       const signed = t.type === "income" ? amt : -amt;
       dailyNet[t.transaction_date] = (dailyNet[t.transaction_date] || 0) + signed;
     });
-
     const grid = document.getElementById("calendarGrid");
     grid.innerHTML = "";
     ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(d => {
-      const el = document.createElement("div");
-      el.className = "cal-dow";
-      el.textContent = d;
-      grid.appendChild(el);
+      const el = document.createElement("div"); el.className = "cal-dow"; el.textContent = d; grid.appendChild(el);
     });
-
-    for (let i = 0; i < firstWeekday; i++) {
-      const empty = document.createElement("div");
-      empty.className = "cal-day empty";
-      grid.appendChild(empty);
-    }
-
+    for (let i = 0; i < firstWeekday; i++) { const e = document.createElement("div"); e.className = "cal-day empty"; grid.appendChild(e); }
     for (let d = 1; d <= daysInMonth; d++) {
       const dateISO = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const net = dailyNet[dateISO] || 0;
       const cell = document.createElement("div");
-      cell.className = "cal-day" + (net > 0 ? " positive" : net < 0 ? " negative" : "") + (dateISO === todayISO ? " today" : "");
-      cell.innerHTML = `
-        <span class="cal-num">${d}</span>
-        ${net !== 0 ? `<span class="cal-net">${net > 0 ? "+" : "-"}${fmt(Math.abs(net))}</span>` : ""}
-      `;
+      cell.className = "cal-day" + (net > 0 ? " positive" : net < 0 ? " negative" : "") + (dateISO === todayStr ? " today" : "");
+      cell.innerHTML = `<span class="cal-num">${d}</span>${net !== 0 ? `<span class="cal-net">${net > 0 ? "+" : "-"}${fmt(Math.abs(net))}</span>` : ""}`;
       grid.appendChild(cell);
     }
   }
 
   function renderPlannedActualChart(transactions) {
-    const expenses = transactions.filter(t => t.type === "expense");
-    const actualByCategory = {};
-    EXPENSE_CATEGORIES.forEach(c => actualByCategory[c] = 0);
-    expenses.forEach(t => {
-      const amt = toBase(Number(t.amount), t.currency || "USD");
-      actualByCategory[t.category] = (actualByCategory[t.category] || 0) + amt;
-    });
-
+    const actualByCategory = computeExpenseTotals(transactions);
     const labels = EXPENSE_CATEGORIES;
     const plannedData = labels.map(c => Number((currentBudgets.categories[c] || 0).toFixed(2)));
     const actualData = labels.map(c => Number(actualByCategory[c].toFixed(2)));
-
     const ctx = document.getElementById("plannedActualChart").getContext("2d");
     if (plannedActualChart) plannedActualChart.destroy();
     plannedActualChart = new Chart(ctx, {
       type: "bar",
-      data: {
-        labels,
-        datasets: [
-          { label: "Planned", data: plannedData, backgroundColor: "#3A473F", borderRadius: 3, barPercentage: 0.7 },
-          { label: "Actual", data: actualData, backgroundColor: "#E8B84B", borderRadius: 3, barPercentage: 0.7 }
-        ]
-      },
+      data: { labels, datasets: [
+        { label: "Planned", data: plannedData, backgroundColor: "#3A473F", borderRadius: 3, barPercentage: 0.7 },
+        { label: "Actual", data: actualData, backgroundColor: "#E8B84B", borderRadius: 3, barPercentage: 0.7 }
+      ]},
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { position: "top", labels: { color: "#9CA89E", font: { family: "IBM Plex Sans", size: 12 }, boxWidth: 12 } },
           tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${fmt(item.parsed.y)}` } }
         },
         scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: "#9CA89E", font: { family: "IBM Plex Sans", size: 11 } }
-          },
-          y: {
-            grid: { color: "rgba(237,232,222,0.06)" },
-            ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val }
-          }
+          x: { grid: { display: false }, ticks: { color: "#9CA89E", font: { family: "IBM Plex Sans", size: 11 } } },
+          y: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val } }
         }
       }
     });
@@ -1273,13 +1305,11 @@
     const curr = summarize(actualTx);
     const runningBalance = await computeRunningBalance(period);
 
-    // Top banner
     document.getElementById("bannerIncome").textContent = fmt(curr.income);
     document.getElementById("bannerExpense").textContent = fmt(curr.totalExpenses);
     document.getElementById("bannerSavings").textContent = fmt(curr.savings);
     document.getElementById("bannerBalance").textContent = fmt(runningBalance);
 
-    // Cash flow waterfall
     document.getElementById("flowIncome").textContent = fmt(curr.income);
     document.getElementById("flowVariable").textContent = "-" + fmt(curr.variable);
     document.getElementById("flowFixed").textContent = "-" + fmt(curr.fixed);
@@ -1287,7 +1317,6 @@
     document.getElementById("flowSavings").textContent = "-" + fmt(curr.savings);
     document.getElementById("flowNet").textContent = fmt(curr.balance);
 
-    // Budget vs Actual table
     const budgetedTotalExpenses = EXPENSE_CATEGORIES.reduce((a, c) => a + (currentBudgets.categories[c] || 0), 0);
     const rows = [
       { label: "Income", planned: currentBudgets.income, actual: curr.income, higherIsBetter: true },
@@ -1304,31 +1333,15 @@
       const isGood = r.higherIsBetter ? diff >= 0 : diff <= 0;
       const arrow = diff === 0 ? "→" : (diff > 0 ? "↑" : "↓");
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${r.label}</td>
-        <td class="num">${fmt(r.planned)}</td>
-        <td class="num">${fmt(r.actual)}</td>
-        <td class="num ${isGood ? "variance-up" : "variance-down"}">${r.planned ? arrow + " " + Math.abs(pct).toFixed(0) + "%" : "—"}</td>
-      `;
+      tr.innerHTML = `<td>${r.label}</td><td class="num">${fmt(r.planned)}</td><td class="num">${fmt(r.actual)}</td><td class="num ${isGood ? "variance-up" : "variance-down"}">${r.planned ? arrow + " " + Math.abs(pct).toFixed(0) + "%" : "—"}</td>`;
       body.appendChild(tr);
     });
-    document.getElementById("comparisonNote").textContent = anyBudgetSet
-      ? ""
-      : "No budget set for this period yet — set one below to see variance here.";
+    document.getElementById("comparisonNote").textContent = anyBudgetSet ? "" : "No budget set for this period yet — set one in Transactions & Budget to see variance here.";
 
-    // Recent transactions (current period, capped at 12)
     renderTxList(current.slice(0, 12));
-
-    // Daily balance trend
-    renderBalanceTrend(period, actualTx);
-
-    // Monthly calendar
+    await renderBalanceTrend(period, actualTx);
     renderCalendar(period, actualTx);
-
-    // Planned vs actual by category
     renderPlannedActualChart(actualTx);
-
-    // Expense breakdown
     renderExpenseBreakdown(actualTx);
   }
 
@@ -1364,21 +1377,18 @@
           <span class="tx-amt num" style="color:${color}; ${isPlanned ? "opacity: 0.75;" : ""}">${sign}${originalAmt}${convertedAmt}</span>
           ${confirmBtn}
           <button class="tx-del" data-id="${t.id}">Delete</button>
-        </div>
-      `;
+        </div>`;
       container.appendChild(row);
     });
     container.querySelectorAll(".tx-del:not(.tx-confirm)").forEach(btn => {
       btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-id");
-        await supabaseClient.from("transactions").delete().eq("id", id);
+        await supabaseClient.from("transactions").delete().eq("id", btn.getAttribute("data-id"));
         loadDashboard();
       });
     });
     container.querySelectorAll(".tx-confirm").forEach(btn => {
       btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-id");
-        await supabaseClient.from("transactions").update({ status: "actual" }).eq("id", id);
+        await supabaseClient.from("transactions").update({ status: "actual" }).eq("id", btn.getAttribute("data-id"));
         loadDashboard();
       });
     });
@@ -1395,7 +1405,6 @@
     const msg = document.getElementById("formMsg");
     msg.className = "form-msg";
     msg.textContent = "";
-
     const type = document.getElementById("txType").value;
     const category = document.getElementById("txCategory").value;
     const amount = parseFloat(document.getElementById("txAmount").value);
@@ -1404,28 +1413,16 @@
     const isFixed = type === "expense" ? document.getElementById("txFixed").checked : false;
     const description = document.getElementById("txDesc").value.trim();
 
-    if (!amount || amount <= 0) {
-      msg.className = "form-msg error";
-      msg.textContent = "Enter an amount greater than 0.";
-      return;
-    }
+    if (!amount || amount <= 0) { msg.className = "form-msg error"; msg.textContent = "Enter an amount greater than 0."; return; }
 
     const txStatus = date > todayISO() ? "planned" : "actual";
 
     const { error } = await supabaseClient.from("transactions").insert({
-      user_id: currentUser.id,
-      type, category, amount, currency,
-      is_fixed: isFixed,
-      description: description || null,
-      transaction_date: date,
-      status: txStatus
+      user_id: currentUser.id, type, category, amount, currency,
+      is_fixed: isFixed, description: description || null, transaction_date: date, status: txStatus
     });
 
-    if (error) {
-      msg.className = "form-msg error";
-      msg.textContent = error.message;
-      return;
-    }
+    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
 
     msg.className = "form-msg ok";
     msg.textContent = txStatus === "planned" ? "Planned transaction added." : "Transaction added.";
