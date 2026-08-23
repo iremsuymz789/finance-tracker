@@ -225,6 +225,66 @@
   .legend-pct{ color: var(--ink-faint); font-size: 12px; margin-left: 6px; }
   .legend-amt{ font-size: 13.5px; }
 
+  /* ---------- Budget form ---------- */
+  .budget-grid{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px 20px;
+    margin-bottom: 18px;
+  }
+  .budget-field label{ font-size: 12.5px; }
+  .budget-field .cat-tag{
+    display:inline-block;
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    margin-right: 6px;
+  }
+  .budget-actions{ display:flex; align-items:center; gap: 14px; }
+  .budget-actions .submit-btn{ width: auto; padding: 11px 24px; }
+  .copy-link{
+    background:none; border:none; color: var(--ink-dim);
+    font-size: 12.5px; text-decoration: underline; cursor: pointer; padding:0;
+  }
+  .copy-link:hover{ color: var(--savings); }
+
+  /* ---------- Calendar ---------- */
+  .calendar-grid{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .cal-dow{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-align: center;
+    padding-bottom: 6px;
+  }
+  .cal-day{
+    aspect-ratio: 1;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    padding: 6px 7px;
+    display:flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 56px;
+  }
+  .cal-day.empty{ border: none; background: none; }
+  .cal-day .cal-num{ font-size: 11px; color: var(--ink-faint); }
+  .cal-day .cal-net{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: right;
+  }
+  .cal-day.positive .cal-net{ color: var(--income); }
+  .cal-day.negative .cal-net{ color: var(--expense); }
+  .cal-day.today{ border-color: var(--savings); }
+
   /* ---------- Comparison table ---------- */
   table{ width: 100%; border-collapse: collapse; font-size: 13.5px; }
   th{
@@ -310,6 +370,9 @@
     .banner{ grid-template-columns: 1fr 1fr; }
     .grid-2{ grid-template-columns: 1fr; }
     .breakdown-grid{ grid-template-columns: 1fr; }
+    .budget-grid{ grid-template-columns: 1fr; }
+    .cal-day{ min-height: 44px; padding: 4px 5px; }
+    .cal-day .cal-net{ font-size: 9.5px; }
     main{ padding: 28px 20px 60px; }
     header{ padding: 16px 20px; }
   }
@@ -345,6 +408,7 @@
     <div class="banner-cell balance">
       <p class="label">Remaining Balance</p>
       <p class="value num" id="bannerBalance">$0.00</p>
+      <p class="sub">Carried forward automatically</p>
     </div>
   </div>
 
@@ -405,24 +469,66 @@
         <span class="flow-val num" id="flowSavings">$0.00</span>
       </div>
       <div class="flow-row total">
-        <span class="flow-label">Net Remaining</span>
+        <span class="flow-label">Net Change This Period</span>
         <span class="flow-val num" id="flowNet">$0.00</span>
       </div>
     </div>
 
     <!-- Monthly comparison -->
     <div class="panel">
-      <h2>This Month vs. Last Month</h2>
+      <h2>Budget vs. Actual</h2>
       <table>
         <thead>
-          <tr><th>Category</th><th>This Month</th><th>Last Month</th><th>Change</th></tr>
+          <tr><th>Category</th><th>Budgeted</th><th>Actual</th><th>Variance</th></tr>
         </thead>
         <tbody id="comparisonBody">
         </tbody>
       </table>
-      <p style="font-size:11.5px; color: var(--ink-faint); margin: 16px 0 0;">
-        Budgeted-vs-actual comparison is coming once we add a budgets feature — for now this compares actuals month over month.
-      </p>
+      <p style="font-size:11.5px; color: var(--ink-faint); margin: 16px 0 0;" id="comparisonNote"></p>
+    </div>
+  </div>
+
+  <!-- Monthly calendar -->
+  <div class="panel" style="margin-bottom: 40px;">
+    <h2>Monthly Calendar</h2>
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </div>
+
+  <!-- Set budget -->
+  <div class="panel" style="margin-bottom: 40px;">
+    <h2>Set Budget for This Period</h2>
+    <p class="form-msg" id="budgetLockNote" style="display:none; color: var(--ink-dim); margin-bottom: 14px;"></p>
+    <form id="budgetForm">
+      <div class="budget-grid">
+        <div class="budget-field">
+          <label for="budgetIncome">Income Target</label>
+          <input type="number" id="budgetIncome" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="budget-field">
+          <label for="budgetSavings">Savings Target</label>
+          <input type="number" id="budgetSavings" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="budget-field">
+          <label for="budgetDebt">Debt Payment Target</label>
+          <input type="number" id="budgetDebt" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div></div>
+      </div>
+      <p class="section-label" style="margin: 4px 0 12px;">Expense Budgets by Category</p>
+      <div class="budget-grid" id="budgetCategoryGrid"></div>
+      <div class="budget-actions">
+        <button type="submit" class="submit-btn">Save Budget</button>
+        <button type="button" class="copy-link" id="copyLastBudget">Copy last period's budget</button>
+      </div>
+      <p class="form-msg" id="budgetMsg"></p>
+    </form>
+  </div>
+
+  <!-- Planned vs actual chart -->
+  <div class="panel" style="margin-bottom: 40px;">
+    <h2>Planned vs. Actual Spending by Category</h2>
+    <div class="chart-wrap" style="height: 260px;">
+      <canvas id="plannedActualChart"></canvas>
     </div>
   </div>
 
@@ -443,6 +549,7 @@
   <!-- Add transaction -->
   <div class="panel">
     <h2>Add a Transaction</h2>
+    <p class="form-msg" id="txLockNote" style="display:none; color: var(--ink-dim); margin-bottom: 14px;"></p>
     <form id="txForm">
       <div class="form-row">
         <div>
@@ -523,6 +630,8 @@
   let trendChart = null;
   let donutChart = null;
   let barChart = null;
+  let plannedActualChart = null;
+  let currentBudgets = { income: 0, savings: 0, debt: 0, categories: {} };
 
   const fmt = (n) => {
     const sign = n < 0 ? "-" : "";
@@ -600,14 +709,108 @@
     document.getElementById("txForm").addEventListener("submit", addTransaction);
     document.getElementById("saveOpeningBalance").addEventListener("click", saveOpeningBalance);
     document.getElementById("baseCurrencySelect").addEventListener("change", changeBaseCurrency);
+    document.getElementById("budgetForm").addEventListener("submit", saveBudget);
+    document.getElementById("copyLastBudget").addEventListener("click", copyLastPeriodBudget);
 
+    buildBudgetCategoryInputs();
     await loadOpeningBalance();
     populateCurrencySelects();
     await loadExchangeRates();
     loadDashboard();
   }
 
-  // ---------- Starting balance & currency ----------
+  function buildBudgetCategoryInputs() {
+    const grid = document.getElementById("budgetCategoryGrid");
+    grid.innerHTML = "";
+    EXPENSE_CATEGORIES.forEach(cat => {
+      const field = document.createElement("div");
+      field.className = "budget-field";
+      field.innerHTML = `
+        <label for="budgetCat_${cat}">
+          <span class="cat-tag" style="background:${CATEGORY_COLORS[cat]};"></span>${cat}
+        </label>
+        <input type="number" id="budgetCat_${cat}" min="0" step="0.01" placeholder="0.00">
+      `;
+      grid.appendChild(field);
+    });
+  }
+
+  // ---------- Budgets ----------
+  async function loadBudgets(period) {
+    const { data, error } = await supabaseClient
+      .from("budgets")
+      .select("*")
+      .eq("period", period);
+    if (error) { console.error(error); return; }
+
+    currentBudgets = { income: 0, savings: 0, debt: 0, categories: {} };
+    (data || []).forEach(b => {
+      const amt = Number(b.planned_amount);
+      if (b.type === "expense" && b.category) currentBudgets.categories[b.category] = amt;
+      else if (b.type === "income") currentBudgets.income = amt;
+      else if (b.type === "savings") currentBudgets.savings = amt;
+      else if (b.type === "debt") currentBudgets.debt = amt;
+    });
+
+    document.getElementById("budgetIncome").value = currentBudgets.income || "";
+    document.getElementById("budgetSavings").value = currentBudgets.savings || "";
+    document.getElementById("budgetDebt").value = currentBudgets.debt || "";
+    EXPENSE_CATEGORIES.forEach(cat => {
+      const el = document.getElementById(`budgetCat_${cat}`);
+      if (el) el.value = currentBudgets.categories[cat] || "";
+    });
+  }
+
+  async function saveBudget(e) {
+    e.preventDefault();
+    const period = document.getElementById("periodSelect").value;
+    const msg = document.getElementById("budgetMsg");
+    msg.className = "form-msg";
+    msg.textContent = "";
+
+    const rows = [];
+    const income = parseFloat(document.getElementById("budgetIncome").value) || 0;
+    const savings = parseFloat(document.getElementById("budgetSavings").value) || 0;
+    const debt = parseFloat(document.getElementById("budgetDebt").value) || 0;
+    rows.push({ user_id: currentUser.id, period, type: "income", category: "Overall", planned_amount: income });
+    rows.push({ user_id: currentUser.id, period, type: "savings", category: "Overall", planned_amount: savings });
+    rows.push({ user_id: currentUser.id, period, type: "debt", category: "Overall", planned_amount: debt });
+    EXPENSE_CATEGORIES.forEach(cat => {
+      const val = parseFloat(document.getElementById(`budgetCat_${cat}`).value) || 0;
+      rows.push({ user_id: currentUser.id, period, type: "expense", category: cat, planned_amount: val });
+    });
+
+    const { error } = await supabaseClient
+      .from("budgets")
+      .upsert(rows, { onConflict: "user_id,period,type,category" });
+
+    if (error) {
+      msg.className = "form-msg error";
+      msg.textContent = error.message;
+      return;
+    }
+    msg.className = "form-msg ok";
+    msg.textContent = "Budget saved.";
+    loadDashboard();
+  }
+
+  async function copyLastPeriodBudget() {
+    const period = document.getElementById("periodSelect").value;
+    const prior = prevPeriod(period);
+    const { data, error } = await supabaseClient.from("budgets").select("*").eq("period", prior);
+    if (error || !data || data.length === 0) {
+      alert("No budget found for the previous period to copy.");
+      return;
+    }
+    data.forEach(b => {
+      if (b.type === "expense" && b.category) {
+        const el = document.getElementById(`budgetCat_${b.category}`);
+        if (el) el.value = b.planned_amount;
+      } else if (b.type === "income") document.getElementById("budgetIncome").value = b.planned_amount;
+      else if (b.type === "savings") document.getElementById("budgetSavings").value = b.planned_amount;
+      else if (b.type === "debt") document.getElementById("budgetDebt").value = b.planned_amount;
+    });
+  }
   async function loadOpeningBalance() {
     const { data, error } = await supabaseClient
       .from("user_settings")
@@ -645,16 +848,27 @@
   function buildPeriodOptions() {
     const select = document.getElementById("periodSelect");
     const now = new Date();
-    for (let i = 0; i < 12; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const FUTURE_MONTHS = 6;
+    const PAST_MONTHS = 11;
+    for (let offset = FUTURE_MONTHS; offset >= -PAST_MONTHS; offset--) {
+      const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = d.toLocaleString("en-US", { month: "long", year: "numeric" });
-      allPeriods.push({ value, label });
+      let label = d.toLocaleString("en-US", { month: "long", year: "numeric" });
+      if (offset === 0) label += " (Current)";
+      allPeriods.push({ value, label, offset });
       const opt = document.createElement("option");
       opt.value = value;
       opt.textContent = label;
+      if (offset === 0) opt.selected = true;
       select.appendChild(opt);
     }
+  }
+
+  function periodStatus(period) {
+    const now = new Date();
+    const currentValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    if (period === currentValue) return "current";
+    return period < currentValue ? "past" : "future";
   }
 
   function populateCategoryOptions() {
@@ -708,9 +922,53 @@
     const { data, error } = await supabaseClient
       .from("transactions")
       .select("type, amount, currency, transaction_date")
+      .eq("status", "actual")
       .lt("transaction_date", dateISO);
     if (error) { console.error(error); return []; }
     return data;
+  }
+
+  async function fetchTransactionsUpTo(dateISO) {
+    const { data, error } = await supabaseClient
+      .from("transactions")
+      .select("type, amount, currency, transaction_date")
+      .eq("status", "actual")
+      .lte("transaction_date", dateISO);
+    if (error) { console.error(error); return []; }
+    return data;
+  }
+
+  function todayISO() { return new Date().toISOString().slice(0, 10); }
+
+  async function computeRunningBalance(period) {
+    const { end } = monthBounds(period);
+    const cutoff = end < todayISO() ? end : todayISO(); // never count future-dated rows
+    const upTo = await fetchTransactionsUpTo(cutoff);
+    return openingBalance + netOf(upTo);
+  }
+
+  function applyPeriodLocking(period) {
+    const status = periodStatus(period);
+
+    const txLockNote = document.getElementById("txLockNote");
+    if (status === "future") {
+      txLockNote.style.display = "block";
+      txLockNote.textContent = "Entries with a future date are logged as \"Planned\" — they won't count toward your totals until you confirm them.";
+    } else {
+      txLockNote.style.display = "none";
+    }
+
+    const budgetForm = document.getElementById("budgetForm");
+    const budgetLockNote = document.getElementById("budgetLockNote");
+    const budgetInputs = budgetForm.querySelectorAll("input, button");
+    if (status === "past") {
+      budgetInputs.forEach(el => el.disabled = true);
+      budgetLockNote.style.display = "block";
+      budgetLockNote.textContent = "This period is in the past — showing what you'd planned, but budgets can't be changed retroactively.";
+    } else {
+      budgetInputs.forEach(el => el.disabled = false);
+      budgetLockNote.style.display = "none";
+    }
   }
 
   async function renderBalanceTrend(period, currentMonthTx) {
@@ -901,6 +1159,93 @@
     });
   }
 
+  function renderCalendar(period, transactions) {
+    const [year, month] = period.split("-").map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const firstWeekday = new Date(year, month - 1, 1).getDay(); // 0 = Sunday
+    const todayISO = new Date().toISOString().slice(0, 10);
+
+    // Sum net flow per day
+    const dailyNet = {};
+    transactions.forEach(t => {
+      const amt = toBase(Number(t.amount), t.currency || "USD");
+      const signed = t.type === "income" ? amt : -amt;
+      dailyNet[t.transaction_date] = (dailyNet[t.transaction_date] || 0) + signed;
+    });
+
+    const grid = document.getElementById("calendarGrid");
+    grid.innerHTML = "";
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(d => {
+      const el = document.createElement("div");
+      el.className = "cal-dow";
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    for (let i = 0; i < firstWeekday; i++) {
+      const empty = document.createElement("div");
+      empty.className = "cal-day empty";
+      grid.appendChild(empty);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateISO = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const net = dailyNet[dateISO] || 0;
+      const cell = document.createElement("div");
+      cell.className = "cal-day" + (net > 0 ? " positive" : net < 0 ? " negative" : "") + (dateISO === todayISO ? " today" : "");
+      cell.innerHTML = `
+        <span class="cal-num">${d}</span>
+        ${net !== 0 ? `<span class="cal-net">${net > 0 ? "+" : "-"}${fmt(Math.abs(net))}</span>` : ""}
+      `;
+      grid.appendChild(cell);
+    }
+  }
+
+  function renderPlannedActualChart(transactions) {
+    const expenses = transactions.filter(t => t.type === "expense");
+    const actualByCategory = {};
+    EXPENSE_CATEGORIES.forEach(c => actualByCategory[c] = 0);
+    expenses.forEach(t => {
+      const amt = toBase(Number(t.amount), t.currency || "USD");
+      actualByCategory[t.category] = (actualByCategory[t.category] || 0) + amt;
+    });
+
+    const labels = EXPENSE_CATEGORIES;
+    const plannedData = labels.map(c => Number((currentBudgets.categories[c] || 0).toFixed(2)));
+    const actualData = labels.map(c => Number(actualByCategory[c].toFixed(2)));
+
+    const ctx = document.getElementById("plannedActualChart").getContext("2d");
+    if (plannedActualChart) plannedActualChart.destroy();
+    plannedActualChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          { label: "Planned", data: plannedData, backgroundColor: "#3A473F", borderRadius: 3, barPercentage: 0.7 },
+          { label: "Actual", data: actualData, backgroundColor: "#E8B84B", borderRadius: 3, barPercentage: 0.7 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "top", labels: { color: "#9CA89E", font: { family: "IBM Plex Sans", size: 12 }, boxWidth: 12 } },
+          tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${fmt(item.parsed.y)}` } }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: "#9CA89E", font: { family: "IBM Plex Sans", size: 11 } }
+          },
+          y: {
+            grid: { color: "rgba(237,232,222,0.06)" },
+            ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val }
+          }
+        }
+      }
+    });
+  }
+
   function summarize(transactions) {
     const sum = (arr) => arr.reduce((a, t) => a + toBase(Number(t.amount), t.currency || "USD"), 0);
     const income = sum(transactions.filter(t => t.type === "income"));
@@ -919,19 +1264,20 @@
     const periodMeta = allPeriods.find(p => p.value === period);
     document.getElementById("periodLabel").textContent = periodMeta ? periodMeta.label : "This Month";
 
-    const [current, previous] = await Promise.all([
-      fetchTransactions(period),
-      fetchTransactions(prevPeriod(period))
-    ]);
+    applyPeriodLocking(period);
 
-    const curr = summarize(current);
-    const prev = summarize(previous);
+    const current = await fetchTransactions(period);
+    const actualTx = current.filter(t => (t.status || "actual") === "actual");
+    await loadBudgets(period);
+
+    const curr = summarize(actualTx);
+    const runningBalance = await computeRunningBalance(period);
 
     // Top banner
     document.getElementById("bannerIncome").textContent = fmt(curr.income);
     document.getElementById("bannerExpense").textContent = fmt(curr.totalExpenses);
     document.getElementById("bannerSavings").textContent = fmt(curr.savings);
-    document.getElementById("bannerBalance").textContent = fmt(curr.balance);
+    document.getElementById("bannerBalance").textContent = fmt(runningBalance);
 
     // Cash flow waterfall
     document.getElementById("flowIncome").textContent = fmt(curr.income);
@@ -941,38 +1287,49 @@
     document.getElementById("flowSavings").textContent = "-" + fmt(curr.savings);
     document.getElementById("flowNet").textContent = fmt(curr.balance);
 
-    // Comparison table
+    // Budget vs Actual table
+    const budgetedTotalExpenses = EXPENSE_CATEGORIES.reduce((a, c) => a + (currentBudgets.categories[c] || 0), 0);
     const rows = [
-      { label: "Income", currVal: curr.income, prevVal: prev.income, higherIsBetter: true },
-      { label: "Total Spending", currVal: curr.totalExpenses, prevVal: prev.totalExpenses, higherIsBetter: false },
-      { label: "Savings", currVal: curr.savings, prevVal: prev.savings, higherIsBetter: true },
-      { label: "Debt Payments", currVal: curr.debt, prevVal: prev.debt, higherIsBetter: false },
+      { label: "Income", planned: currentBudgets.income, actual: curr.income, higherIsBetter: true },
+      { label: "Total Spending", planned: budgetedTotalExpenses, actual: curr.totalExpenses, higherIsBetter: false },
+      { label: "Savings", planned: currentBudgets.savings, actual: curr.savings, higherIsBetter: true },
+      { label: "Debt Payments", planned: currentBudgets.debt, actual: curr.debt, higherIsBetter: false },
     ];
     const body = document.getElementById("comparisonBody");
     body.innerHTML = "";
+    const anyBudgetSet = currentBudgets.income || currentBudgets.savings || currentBudgets.debt || budgetedTotalExpenses;
     rows.forEach(r => {
-      const diff = r.currVal - r.prevVal;
-      const pct = r.prevVal !== 0 ? (diff / r.prevVal) * 100 : (r.currVal !== 0 ? 100 : 0);
+      const diff = r.actual - r.planned;
+      const pct = r.planned !== 0 ? (diff / r.planned) * 100 : (r.actual !== 0 ? 100 : 0);
       const isGood = r.higherIsBetter ? diff >= 0 : diff <= 0;
       const arrow = diff === 0 ? "→" : (diff > 0 ? "↑" : "↓");
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${r.label}</td>
-        <td class="num">${fmt(r.currVal)}</td>
-        <td class="num">${fmt(r.prevVal)}</td>
-        <td class="num ${isGood ? "variance-up" : "variance-down"}">${arrow} ${Math.abs(pct).toFixed(0)}%</td>
+        <td class="num">${fmt(r.planned)}</td>
+        <td class="num">${fmt(r.actual)}</td>
+        <td class="num ${isGood ? "variance-up" : "variance-down"}">${r.planned ? arrow + " " + Math.abs(pct).toFixed(0) + "%" : "—"}</td>
       `;
       body.appendChild(tr);
     });
+    document.getElementById("comparisonNote").textContent = anyBudgetSet
+      ? ""
+      : "No budget set for this period yet — set one below to see variance here.";
 
     // Recent transactions (current period, capped at 12)
     renderTxList(current.slice(0, 12));
 
     // Daily balance trend
-    renderBalanceTrend(period, current);
+    renderBalanceTrend(period, actualTx);
+
+    // Monthly calendar
+    renderCalendar(period, actualTx);
+
+    // Planned vs actual by category
+    renderPlannedActualChart(actualTx);
 
     // Expense breakdown
-    renderExpenseBreakdown(current);
+    renderExpenseBreakdown(actualTx);
   }
 
   function renderTxList(transactions) {
@@ -985,31 +1342,43 @@
     transactions.forEach(t => {
       const row = document.createElement("div");
       row.className = "tx-row";
+      const isPlanned = t.status === "planned";
       const sign = t.type === "income" ? "+" : "-";
       const color = t.type === "income" ? "var(--income)" : t.type === "savings" ? "var(--savings)" : t.type === "debt" ? "var(--debt)" : "var(--expense)";
       const currency = t.currency || "USD";
       const originalAmt = fmtOriginal(Math.abs(t.amount), currency);
       const convertedAmt = currency !== baseCurrency ? ` <span style="color: var(--ink-faint); font-size: 12px;">(≈ ${fmt(Math.abs(toBase(Number(t.amount), currency)))})</span>` : "";
+      const plannedTag = isPlanned ? ` <span style="color: var(--savings); font-size: 11px; border: 1px solid var(--savings); border-radius: 3px; padding: 1px 6px; margin-left: 6px;">Planned</span>` : "";
+      const confirmBtn = isPlanned ? `<button class="tx-del tx-confirm" data-id="${t.id}" style="color: var(--income);">Confirm</button>` : "";
       row.innerHTML = `
-        <div class="tx-left">
+        <div class="tx-left" style="${isPlanned ? "opacity: 0.75;" : ""}">
           <span class="tx-dot ${t.type}"></span>
           <div>
             <span class="tx-cat">${t.category}</span>
             <span class="tx-date">${t.transaction_date}</span>
+            ${plannedTag}
             ${t.description ? `<div class="tx-desc">${escapeHtml(t.description)}</div>` : ""}
           </div>
         </div>
         <div style="display:flex; align-items:center;">
-          <span class="tx-amt num" style="color:${color};">${sign}${originalAmt}${convertedAmt}</span>
+          <span class="tx-amt num" style="color:${color}; ${isPlanned ? "opacity: 0.75;" : ""}">${sign}${originalAmt}${convertedAmt}</span>
+          ${confirmBtn}
           <button class="tx-del" data-id="${t.id}">Delete</button>
         </div>
       `;
       container.appendChild(row);
     });
-    container.querySelectorAll(".tx-del").forEach(btn => {
+    container.querySelectorAll(".tx-del:not(.tx-confirm)").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-id");
         await supabaseClient.from("transactions").delete().eq("id", id);
+        loadDashboard();
+      });
+    });
+    container.querySelectorAll(".tx-confirm").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        await supabaseClient.from("transactions").update({ status: "actual" }).eq("id", id);
         loadDashboard();
       });
     });
@@ -1041,12 +1410,15 @@
       return;
     }
 
+    const txStatus = date > todayISO() ? "planned" : "actual";
+
     const { error } = await supabaseClient.from("transactions").insert({
       user_id: currentUser.id,
       type, category, amount, currency,
       is_fixed: isFixed,
       description: description || null,
-      transaction_date: date
+      transaction_date: date,
+      status: txStatus
     });
 
     if (error) {
@@ -1056,7 +1428,7 @@
     }
 
     msg.className = "form-msg ok";
-    msg.textContent = "Transaction added.";
+    msg.textContent = txStatus === "planned" ? "Planned transaction added." : "Transaction added.";
     document.getElementById("txAmount").value = "";
     document.getElementById("txDesc").value = "";
     document.getElementById("txFixed").checked = false;
