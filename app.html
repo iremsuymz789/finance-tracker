@@ -57,6 +57,23 @@
     --insight-neg: #8B5A8F;
     --insight-neutral: #5A6B8C;
   }
+  /* Kitty Mode overrides whichever base theme is active */
+  body.kitty-mode{
+    --bg: #FFEAF4;
+    --surface: #FFFFFF;
+    --surface-2: #FFD6EA;
+    --ink: #5C2A44;
+    --ink-dim: #A0577F;
+    --ink-faint: #C98BAE;
+    --income: #6FBF8F;
+    --expense: #FF6FA3;
+    --savings: #FFB6D9;
+    --debt: #C77DFF;
+    --line: rgba(92,42,68,0.14);
+    --insight-pos: #FF8FC7;
+    --insight-neg: #FF6FA3;
+    --insight-neutral: #C77DFF;
+  }
   *{ box-sizing: border-box; }
   body{
     margin:0;
@@ -214,6 +231,69 @@
     content: "|";
     animation: blink 0.9s step-start infinite;
     margin-left: 1px;
+  }
+
+  /* ---------- Kitty Mode ---------- */
+  .kitty-toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 4px 0 18px;
+  }
+  .kitty-toggle-row .kt-label{ font-size: 14px; color: var(--ink); font-weight: 500; }
+  .kitty-toggle-row .kt-desc{ font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+  .kt-switch{ position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+  .kt-switch input{ opacity: 0; width: 0; height: 0; }
+  .kt-slider{
+    position: absolute; cursor: pointer; inset: 0;
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 20px; transition: 0.25s;
+  }
+  .kt-slider::before{
+    content: ""; position: absolute; width: 18px; height: 18px;
+    left: 3px; top: 3px; background: var(--ink-faint); border-radius: 50%;
+    transition: 0.25s;
+  }
+  .kt-switch input:checked + .kt-slider{ background: #FF8FC7; border-color: #FF8FC7; }
+  .kt-switch input:checked + .kt-slider::before{ transform: translateX(20px); background: #fff; }
+
+  .glitter-particle{
+    position: fixed; top: -30px; z-index: 200;
+    font-size: 20px; pointer-events: none;
+    animation: glitterFall linear forwards;
+  }
+  @keyframes glitterFall{
+    to{ transform: translateY(110vh) rotate(360deg); opacity: 0.2; }
+  }
+
+  #kittyMediaSlot{
+    position: fixed;
+    right: 18px; bottom: 96px;
+    z-index: 45;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+  #kittyMediaSlot.visible{ opacity: 1; }
+  #kittyMediaSlot img{
+    width: 110px; filter: drop-shadow(0 6px 18px rgba(255,111,163,0.5));
+    animation: kittyBob 1.8s ease-in-out infinite;
+  }
+  #kittyMediaSlot video{
+    width: 150px; border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(255,111,163,0.5);
+  }
+  @keyframes kittyBob{
+    0%, 100%{ transform: translateY(0) rotate(-2deg); }
+    50%{ transform: translateY(-8px) rotate(2deg); }
+  }
+  .kitty-sparkle{
+    position: absolute;
+    font-size: 15px;
+    animation: sparkleSpin 1.4s ease-in-out infinite;
+  }
+  @keyframes sparkleSpin{
+    0%, 100%{ opacity: 0.4; transform: scale(0.8) rotate(0deg); }
+    50%{ opacity: 1; transform: scale(1.15) rotate(20deg); }
   }
 
   /* ---------- Settings page ---------- */
@@ -397,6 +477,15 @@
 
   .breakdown-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
   .breakdown-chart{ height: 220px; position: relative; }
+  .hamster-wheel-overlay{
+    display: none;
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 42%;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  body.kitty-mode .hamster-wheel-overlay{ display: block; }
   .breakdown-legend{ display:flex; flex-direction: column; gap: 9px; }
   .legend-row{ display:flex; align-items:center; justify-content: space-between; font-size: 13px; }
   .legend-left{ display:flex; align-items:center; gap: 9px; }
@@ -531,6 +620,9 @@
   </div>
 </div>
 
+<!-- Kitty Mode media slot (image/video shown alongside relevant insights) -->
+<div id="kittyMediaSlot"></div>
+
 <main class="page-container">
 
   <!-- ================= DASHBOARD ================= -->
@@ -577,6 +669,7 @@
         <h2>Expense Snapshot</h2>
         <div class="breakdown-chart" style="height:180px;">
           <canvas id="expenseDonutChart"></canvas>
+          <img src="hamster_wheel.webp" class="hamster-wheel-overlay" alt="">
         </div>
         <div class="breakdown-legend" id="breakdownLegend" style="margin-top:16px;"></div>
       </div>
@@ -707,7 +800,7 @@
         <h2>Portfolio Breakdown</h2>
         <div id="holdingsContent">
           <div class="breakdown-grid" id="holdingsChartWrap" style="display:none;">
-            <div class="breakdown-chart"><canvas id="holdingsDonutChart"></canvas></div>
+            <div class="breakdown-chart"><canvas id="holdingsDonutChart"></canvas><img src="hamster_wheel.webp" class="hamster-wheel-overlay" alt=""></div>
             <div class="breakdown-legend" id="holdingsLegend"></div>
           </div>
           <p class="empty-state" id="holdingsEmpty">No holdings logged yet — add one below.</p>
@@ -793,7 +886,7 @@
     <div class="panel">
       <h2>Expense Breakdown</h2>
       <div class="breakdown-grid">
-        <div class="breakdown-chart"><canvas id="expenseDonutChart2"></canvas></div>
+        <div class="breakdown-chart"><canvas id="expenseDonutChart2"></canvas><img src="hamster_wheel.webp" class="hamster-wheel-overlay" alt=""></div>
         <div class="breakdown-legend" id="breakdownLegend2"></div>
       </div>
       <div class="chart-wrap" style="height: 220px; margin-top: 24px;"><canvas id="expenseBarChart"></canvas></div>
@@ -871,6 +964,17 @@
             <p class="swatch-label">Sand</p>
           </div>
         </div>
+
+        <div class="kitty-toggle-row" style="margin-top: 22px; border-top: 1px solid var(--line); padding-top: 20px;">
+          <div>
+            <p class="kt-label">Kitty Mode</p>
+            <p class="kt-desc">Turns everything pink, just because.</p>
+          </div>
+          <label class="kt-switch">
+            <input type="checkbox" id="kittyToggle">
+            <span class="kt-slider"></span>
+          </label>
+        </div>
       </div>
     </details>
 
@@ -914,6 +1018,7 @@
   let currentUser = null;
   let userName = "";
   let lastPeriod = null;
+  let kittyMode = false;
   let lastActualTx = [];
   let allPeriods = [];
   let openingBalance = 0;
@@ -997,6 +1102,75 @@
     if (persist && currentUser) {
       supabaseClient.from("user_settings").upsert({ user_id: currentUser.id, theme, opening_balance: openingBalance, base_currency: baseCurrency }).then(() => {});
     }
+  }
+
+  // ---------- Kitty Mode ----------
+  const NAV_LABELS_NORMAL = { dashboard: "Dashboard", transactions: "Transactions", goals: "Goals & Life", analytics: "Analytics" };
+  const NAV_LABELS_KITTY = { dashboard: "Dashboard 🐱", transactions: "Transactions 🐾", goals: "Goals & Life 🐈", analytics: "Analytics 🐾" };
+
+  function applyKittyMode(on, persist) {
+    kittyMode = on;
+    document.body.classList.toggle("kitty-mode", on);
+    document.querySelectorAll(".nav-item").forEach(btn => {
+      const key = btn.dataset.page;
+      btn.textContent = on ? NAV_LABELS_KITTY[key] : NAV_LABELS_NORMAL[key];
+    });
+    if (on) {
+      document.getElementById("profileAvatar").textContent = "🐱";
+    } else {
+      updateProfileLabel();
+    }
+    if (persist && currentUser) {
+      supabaseClient.from("user_settings").upsert({ user_id: currentUser.id, kitty_mode: on, opening_balance: openingBalance, base_currency: baseCurrency }).then(() => {});
+    }
+    if (on) startGlitterRain();
+    hideKittyMedia();
+    // Recompute insights so kitty-specific ones (or their absence) reflect immediately
+    renderInsightCards();
+  }
+
+  document.getElementById("kittyToggle").addEventListener("change", (e) => {
+    applyKittyMode(e.target.checked, true);
+  });
+
+  function startGlitterRain() {
+    const sparkles = ["✨", "💖", "🐾", "💗", "⭐"];
+    let count = 0;
+    const rainInterval = setInterval(() => {
+      for (let i = 0; i < 3; i++) {
+        const el = document.createElement("span");
+        el.className = "glitter-particle";
+        el.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+        el.style.left = Math.random() * 100 + "vw";
+        const duration = 2.5 + Math.random() * 2;
+        el.style.animationDuration = duration + "s";
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), duration * 1000 + 200);
+      }
+      count++;
+      if (count > 18) clearInterval(rainInterval);
+    }, 160);
+  }
+
+  function showKittyMedia(kind) {
+    if (!kittyMode) return;
+    const slot = document.getElementById("kittyMediaSlot");
+    if (kind === "bigExpense") {
+      slot.innerHTML = `<span class="kitty-sparkle" style="top:-6px; left:-10px;">✨</span><img src="crying_cat.png" alt=""><span class="kitty-sparkle" style="bottom:-4px; right:-8px;">✨</span>`;
+    } else if (kind === "loan") {
+      slot.innerHTML = `<span class="kitty-sparkle" style="top:-6px; right:-10px;">✨</span><img src="wallet_cat.png" alt=""><span class="kitty-sparkle" style="bottom:-4px; left:-8px;">✨</span>`;
+    } else if (kind === "income") {
+      slot.innerHTML = `<video src="income_video.mp4" autoplay muted loop playsinline></video>`;
+    } else {
+      return;
+    }
+    slot.classList.add("visible");
+  }
+
+  function hideKittyMedia() {
+    const slot = document.getElementById("kittyMediaSlot");
+    slot.classList.remove("visible");
+    setTimeout(() => { slot.innerHTML = ""; }, 500);
   }
 
   // ---------- Auth guard & init ----------
@@ -1142,6 +1316,7 @@
     el.style.opacity = "1";
     el.textContent = "";
     el.classList.add("typing");
+    hideKittyMedia();
 
     let i = 0;
     clearInterval(insightTypeTimer);
@@ -1151,10 +1326,12 @@
       if (i >= item.text.length) {
         clearInterval(insightTypeTimer);
         el.classList.remove("typing");
+        if (item.media) showKittyMedia(item.media);
         clearTimeout(insightTimer);
         insightTimer = setTimeout(() => {
           el.style.transition = "opacity 0.4s ease";
           el.style.opacity = "0";
+          hideKittyMedia();
           setTimeout(() => {
             insightIndex = (insightIndex + 1) % insightList.length;
             el.style.transition = "none";
@@ -1259,6 +1436,35 @@
       if (last60.length === 0 && insights.length === 0) {
         insights.push({ color: COLOR_NEUTRAL, text: `Add your first transaction to start seeing personalized insights here.` });
       }
+    }
+
+    // Kitty Mode extras — tied to a specific media cue
+    if (kittyMode) {
+      const monthStart2 = iso(new Date(today.getFullYear(), today.getMonth(), 1));
+      const thisMonthTx2 = last60.filter(t => t.transaction_date >= monthStart2);
+      const kittyExtras = [];
+
+      const bigExpense = thisMonthTx2
+        .filter(t => t.type === "expense")
+        .map(t => ({ ...t, baseAmt: toBase(Number(t.amount), t.currency || "USD") }))
+        .sort((a, b) => b.baseAmt - a.baseAmt)[0];
+      if (bigExpense && bigExpense.baseAmt > 500) {
+        kittyExtras.push({ color: COLOR_DOWN, text: `Your ${bigExpense.category} expense of ${fmt(bigExpense.baseAmt)} was over $500 this month.`, media: "bigExpense" });
+      }
+
+      const hasLoan = thisMonthTx2.some(t => t.type === "debt");
+      if (hasLoan) {
+        const loanTotal = sumIn(thisMonthTx2, t => t.type === "debt");
+        kittyExtras.push({ color: COLOR_NEUTRAL, text: `You've made ${fmt(loanTotal)} in debt payments this month.`, media: "loan" });
+      }
+
+      const incomeThisMonth = sumIn(thisMonthTx2, t => t.type === "income");
+      if (incomeThisMonth > 0) {
+        kittyExtras.push({ color: COLOR_UP, text: `You've brought in ${fmt(incomeThisMonth)} this month — nice!`, media: "income" });
+      }
+
+      insights.unshift(...kittyExtras);
+      return insights.slice(0, 5);
     }
 
     return insights.slice(0, 3);
@@ -1624,12 +1830,15 @@
   }
 
   async function loadOpeningBalance() {
-    const { data, error } = await supabaseClient.from("user_settings").select("opening_balance, base_currency, full_name, occupation, primary_goal").eq("user_id", currentUser.id).maybeSingle();
+    const { data, error } = await supabaseClient.from("user_settings").select("opening_balance, base_currency, full_name, occupation, primary_goal, kitty_mode").eq("user_id", currentUser.id).maybeSingle();
     if (error) { console.error(error); return; }
     openingBalance = data ? Number(data.opening_balance) : 0;
     baseCurrency = data && data.base_currency ? data.base_currency : "USD";
     userName = (data && data.full_name) || "";
+    kittyMode = !!(data && data.kitty_mode);
     document.getElementById("openingBalanceInput").value = openingBalance.toFixed(2);
+    document.getElementById("kittyToggle").checked = kittyMode;
+    applyKittyMode(kittyMode, false);
   }
   async function saveOpeningBalance() {
     const input = document.getElementById("openingBalanceInput");
