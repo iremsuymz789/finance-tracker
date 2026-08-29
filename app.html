@@ -563,6 +563,30 @@
   .holding-row:last-child{ border-bottom: none; }
   .holding-left{ display:flex; align-items:center; gap: 10px; }
 
+  .recurring-summary{ display:flex; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  .recurring-row{
+    display:flex; align-items:center; justify-content: space-between;
+    padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 13.5px;
+  }
+  .recurring-row:last-child{ border-bottom: none; }
+  .recurring-left{ display:flex; align-items:center; gap: 12px; }
+  .recurring-badge{
+    font-size: 10.5px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 2px 7px; border-radius: 3px; flex-shrink: 0;
+  }
+  .recurring-badge.bill{ background: var(--surface-2); color: var(--ink-dim); }
+  .recurring-badge.sub{ background: rgba(232,184,75,0.15); color: var(--savings); }
+  .recurring-name{ color: var(--ink); }
+  .recurring-due{ color: var(--ink-faint); font-size: 12px; margin-left: 8px; }
+  .recurring-due.overdue{ color: var(--expense); }
+  .recurring-actions{ display:flex; align-items:center; gap: 4px; }
+  .recurring-pay-btn{
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--income);
+    border-radius: 3px; padding: 5px 10px; font-size: 11.5px; cursor: pointer;
+  }
+  .recurring-pay-btn:hover{ border-color: var(--income); }
+  .recurring-pay-btn:disabled{ opacity: 0.4; cursor: default; }
+
   @media (max-width: 800px){
     .calc-stats{ grid-template-columns: 1fr; }
   }
@@ -764,7 +788,68 @@
 
     <div class="panel">
       <h2>Fixed Expenses &amp; Subscriptions</h2>
-      <div class="placeholder-card">Coming soon — track rent, streaming, and software subscriptions with due-date reminders here.</div>
+
+      <div class="recurring-summary">
+        <div>
+          <p class="section-label" style="margin-bottom:6px;">Monthly Total</p>
+          <p class="value num" id="recurringMonthlyTotal" style="font-family:'Fraunces',serif; font-weight:500; font-size:24px;">$0.00</p>
+        </div>
+        <div>
+          <p class="section-label" style="margin-bottom:6px;">Active Items</p>
+          <p class="value num" id="recurringCount" style="font-family:'Fraunces',serif; font-weight:500; font-size:24px;">0</p>
+        </div>
+      </div>
+
+      <div id="recurringList" style="margin: 20px 0;"></div>
+
+      <form id="recurringForm">
+        <div class="form-row">
+          <div>
+            <label for="recName">Name</label>
+            <input type="text" id="recName" placeholder="e.g. Netflix, Rent, Adobe CC" required>
+          </div>
+          <div>
+            <label for="recIsSub">Type</label>
+            <select id="recIsSub">
+              <option value="false">Fixed Bill</option>
+              <option value="true">Subscription</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="recCategory">Category</label>
+            <select id="recCategory"></select>
+          </div>
+          <div>
+            <label for="recAmount">Amount</label>
+            <input type="number" id="recAmount" min="0" step="0.01" placeholder="0.00" required>
+          </div>
+          <div>
+            <label for="recCurrency">Currency</label>
+            <select id="recCurrency"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="recCycle">Billing Cycle</label>
+            <select id="recCycle">
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+          <div>
+            <label for="recDueDay">Due Day of Month</label>
+            <input type="number" id="recDueDay" min="1" max="28" placeholder="e.g. 15" required>
+          </div>
+          <div id="recDueMonthField" style="display:none;">
+            <label for="recDueMonth">Due Month</label>
+            <select id="recDueMonth"></select>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn" style="width:auto; padding:11px 22px;">Add Recurring Item</button>
+        <p class="form-msg" id="recurringMsg"></p>
+      </form>
     </div>
 
     <div class="panel" style="margin-bottom:0;">
@@ -1183,7 +1268,7 @@
     populateCategoryOptions();
     document.getElementById("txDate").valueAsDate = new Date();
 
-    document.getElementById("periodSelect").addEventListener("change", loadDashboard);
+    document.getElementById("periodSelect").addEventListener("change", () => { loadDashboard(); loadRecurringItems(); });
     document.getElementById("txType").addEventListener("change", () => {
       populateCategoryOptions();
       document.getElementById("fixedRow").style.display = document.getElementById("txType").value === "expense" ? "flex" : "none";
@@ -1205,6 +1290,7 @@
     document.getElementById("calcFrom").addEventListener("change", updateCalculator);
     document.getElementById("calcTo").addEventListener("change", updateCalculator);
     document.getElementById("holdingForm").addEventListener("submit", addHolding);
+    document.getElementById("recurringForm").addEventListener("submit", addRecurringItem);
     ["calcInitial", "calcMonthly", "calcRate", "calcYears"].forEach(id => {
       document.getElementById(id).addEventListener("input", updateGrowthCalculator);
     });
@@ -1215,6 +1301,7 @@
     await loadOpeningBalance();
     populateCurrencySelects();
     populateHoldingCurrency();
+    populateRecurringSelects();
     applyTheme(await loadThemePreference(), false);
     await loadExchangeRates();
     updateCalculator();
@@ -1222,6 +1309,7 @@
     updateGrowthCalculator();
     loadTotalSaved();
     loadHoldings();
+    loadRecurringItems();
     await loadDashboard();
 
     if (!userName) {
@@ -1479,6 +1567,164 @@
       sel.appendChild(opt);
     });
     sel.value = baseCurrency;
+  }
+
+  // ---------- Fixed Expenses & Subscriptions ----------
+  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  function populateRecurringSelects() {
+    const catSel = document.getElementById("recCategory");
+    const curSel = document.getElementById("recCurrency");
+    const monthSel = document.getElementById("recDueMonth");
+    catSel.innerHTML = "";
+    EXPENSE_CATEGORIES.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      catSel.appendChild(opt);
+    });
+    curSel.innerHTML = "";
+    CURRENCIES.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      curSel.appendChild(opt);
+    });
+    curSel.value = baseCurrency;
+    monthSel.innerHTML = "";
+    MONTH_NAMES.forEach((m, i) => {
+      const opt = document.createElement("option");
+      opt.value = i + 1; opt.textContent = m;
+      monthSel.appendChild(opt);
+    });
+    monthSel.value = new Date().getMonth() + 1;
+  }
+
+  document.getElementById("recCycle").addEventListener("change", () => {
+    document.getElementById("recDueMonthField").style.display = document.getElementById("recCycle").value === "yearly" ? "block" : "none";
+  });
+
+  async function loadRecurringItems() {
+    const { data, error } = await supabaseClient.from("recurring_items").select("*").eq("active", true).order("due_day");
+    if (error) { console.error(error); return; }
+    renderRecurringItems(data || []);
+  }
+
+  function nextDueDate(item) {
+    const today = new Date();
+    const year = today.getFullYear();
+    if (item.billing_cycle === "yearly") {
+      const month = item.due_month || 1;
+      let due = new Date(year, month - 1, item.due_day);
+      if (due < new Date(today.getFullYear(), today.getMonth(), today.getDate())) due = new Date(year + 1, month - 1, item.due_day);
+      return due;
+    }
+    let due = new Date(year, today.getMonth(), item.due_day);
+    if (due < new Date(today.getFullYear(), today.getMonth(), today.getDate())) due = new Date(year, today.getMonth() + 1, item.due_day);
+    return due;
+  }
+
+  function renderRecurringItems(items) {
+    const monthlyTotal = items.reduce((sum, it) => {
+      const amt = toBase(Number(it.amount), it.currency || "USD");
+      return sum + (it.billing_cycle === "yearly" ? amt / 12 : amt);
+    }, 0);
+    document.getElementById("recurringMonthlyTotal").textContent = fmt(monthlyTotal);
+    document.getElementById("recurringCount").textContent = items.length;
+
+    const list = document.getElementById("recurringList");
+    list.innerHTML = "";
+    if (items.length === 0) {
+      list.innerHTML = '<p class="empty-state">No recurring bills or subscriptions yet — add your first one below.</p>';
+      return;
+    }
+
+    const currentPeriod = document.getElementById("periodSelect").value;
+    const sorted = [...items].sort((a, b) => nextDueDate(a) - nextDueDate(b));
+
+    sorted.forEach(item => {
+      const due = nextDueDate(item);
+      const daysUntil = Math.ceil((due - new Date(new Date().toDateString())) / 86400000);
+      const dueLabel = daysUntil === 0 ? "Due today" : daysUntil === 1 ? "Due tomorrow" : daysUntil < 0 ? "Overdue" : `Due in ${daysUntil}d`;
+      const isOverdue = daysUntil < 0;
+      const alreadyPaid = item.last_paid_period === currentPeriod;
+
+      const row = document.createElement("div");
+      row.className = "recurring-row";
+      row.innerHTML = `
+        <div class="recurring-left">
+          <span class="recurring-badge ${item.is_subscription ? "sub" : "bill"}">${item.is_subscription ? "Subscription" : "Bill"}</span>
+          <div>
+            <span class="recurring-name">${escapeHtml(item.name)}</span>
+            <span class="recurring-due ${isOverdue ? "overdue" : ""}">${dueLabel} · ${item.billing_cycle === "yearly" ? MONTH_NAMES[(item.due_month || 1) - 1] + " " : ""}${item.due_day}${item.billing_cycle === "yearly" ? "" : "th"}</span>
+          </div>
+        </div>
+        <div class="recurring-actions">
+          <span class="num" style="margin-right:8px;">${fmtOriginal(item.amount, item.currency || "USD")}${item.billing_cycle === "yearly" ? "/yr" : ""}</span>
+          <button class="recurring-pay-btn" data-id="${item.id}" ${alreadyPaid ? "disabled" : ""}>${alreadyPaid ? "Paid" : "Mark paid"}</button>
+          <button class="tx-del" data-del-id="${item.id}">Delete</button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+
+    list.querySelectorAll(".recurring-pay-btn").forEach(btn => {
+      btn.addEventListener("click", () => markRecurringPaid(btn.getAttribute("data-id")));
+    });
+    list.querySelectorAll("[data-del-id]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await supabaseClient.from("recurring_items").update({ active: false }).eq("id", btn.getAttribute("data-del-id"));
+        loadRecurringItems();
+      });
+    });
+  }
+
+  async function markRecurringPaid(id) {
+    const { data: item, error: fetchErr } = await supabaseClient.from("recurring_items").select("*").eq("id", id).single();
+    if (fetchErr || !item) return;
+    const currentPeriod = document.getElementById("periodSelect").value;
+
+    const { error: txErr } = await supabaseClient.from("transactions").insert({
+      user_id: currentUser.id, type: "expense", category: item.category,
+      amount: item.amount, currency: item.currency || "USD",
+      is_fixed: true, description: item.name,
+      transaction_date: todayISO(), status: "actual"
+    });
+    if (txErr) { alert(txErr.message); return; }
+
+    await supabaseClient.from("recurring_items").update({ last_paid_period: currentPeriod }).eq("id", id);
+    loadRecurringItems();
+    loadDashboard();
+  }
+
+  async function addRecurringItem(e) {
+    e.preventDefault();
+    const msg = document.getElementById("recurringMsg");
+    msg.className = "form-msg";
+    const name = document.getElementById("recName").value.trim();
+    const isSub = document.getElementById("recIsSub").value === "true";
+    const category = document.getElementById("recCategory").value;
+    const amount = parseFloat(document.getElementById("recAmount").value);
+    const currency = document.getElementById("recCurrency").value;
+    const cycle = document.getElementById("recCycle").value;
+    const dueDay = parseInt(document.getElementById("recDueDay").value);
+    const dueMonth = cycle === "yearly" ? parseInt(document.getElementById("recDueMonth").value) : null;
+
+    if (!name || !amount || amount <= 0 || !dueDay || dueDay < 1 || dueDay > 28) {
+      msg.className = "form-msg error";
+      msg.textContent = "Fill in a name, a valid amount, and a due day between 1–28.";
+      return;
+    }
+
+    const { error } = await supabaseClient.from("recurring_items").insert({
+      user_id: currentUser.id, name, is_subscription: isSub, category,
+      amount, currency, billing_cycle: cycle, due_day: dueDay, due_month: dueMonth
+    });
+    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
+
+    msg.className = "form-msg ok";
+    msg.textContent = "Added.";
+    document.getElementById("recurringForm").reset();
+    document.getElementById("recDueMonthField").style.display = "none";
+    loadRecurringItems();
   }
 
   // ---------- Total Saved ----------
@@ -1859,6 +2105,7 @@
     updateGrowthCalculator();
     loadTotalSaved();
     loadHoldings();
+    loadRecurringItems();
     loadDashboard();
   }
 
