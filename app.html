@@ -564,6 +564,22 @@
   .holding-row:last-child{ border-bottom: none; }
   .holding-left{ display:flex; align-items:center; gap: 10px; }
 
+  .creator-stats-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .creator-stat-card{ background: var(--surface-2); border-radius: 6px; padding: 16px 18px; }
+  .creator-stat-card .cs-platform{ font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 10px; }
+  .creator-stat-card .cs-row{ display:flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-dim); padding: 4px 0; }
+  .creator-stat-card .cs-row b{ color: var(--ink); font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+  .creator-stat-card .cs-date{ font-size: 10.5px; color: var(--ink-faint); margin-top: 8px; }
+
+  .target-row{ padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .target-row:last-child{ border-bottom: none; }
+  .target-head{ display:flex; justify-content: space-between; align-items: center; font-size: 13.5px; margin-bottom: 8px; }
+  .target-label{ color: var(--ink); }
+  .target-label .num{ color: var(--ink-faint); font-size: 12px; margin-left: 6px; }
+  .progress-track{ height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .progress-fill{ height: 100%; background: var(--savings); border-radius: 4px; transition: width 0.6s ease; }
+  .target-meta{ display:flex; justify-content: space-between; font-size: 11.5px; color: var(--ink-faint); margin-top: 6px; }
+
   .recurring-summary{ display:flex; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
   .recurring-row{
     display:flex; align-items:center; justify-content: space-between;
@@ -887,8 +903,110 @@
       </div>
     </div>
     <div class="goal-pane" id="goal-creator">
+      <div class="panel">
+        <h2>Latest Stats</h2>
+        <div id="creatorStatsCards" class="creator-stats-grid"></div>
+        <p class="empty-state" id="creatorStatsEmpty" style="display:none;">No stats logged yet — add your first snapshot below.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Growth Trend</h2>
+        <div class="form-row" style="margin-bottom:16px;">
+          <div>
+            <label for="creatorChartPlatform">Platform</label>
+            <select id="creatorChartPlatform"></select>
+          </div>
+          <div>
+            <label for="creatorChartMetric">Metric</label>
+            <select id="creatorChartMetric">
+              <option value="followers">Followers</option>
+              <option value="views">Views</option>
+              <option value="engagement_rate">Engagement Rate</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="creatorTrendChart"></canvas></div>
+        <p class="empty-state" id="creatorTrendEmpty" style="display:none;">Log at least two snapshots for this platform to see a trend.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Log a Snapshot</h2>
+        <form id="creatorMetricForm">
+          <div class="form-row">
+            <div>
+              <label for="metricPlatform">Platform</label>
+              <select id="metricPlatform">
+                <option>YouTube</option>
+                <option>Instagram</option>
+                <option>TikTok</option>
+                <option>X / Twitter</option>
+                <option>Twitch</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="metricDate">Date</label>
+              <input type="date" id="metricDate" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="metricFollowers">Followers</label>
+              <input type="number" id="metricFollowers" min="0" step="1" placeholder="e.g. 12400">
+            </div>
+            <div>
+              <label for="metricViews">Views <span style="color:var(--ink-faint);">(this period)</span></label>
+              <input type="number" id="metricViews" min="0" step="1" placeholder="e.g. 85000">
+            </div>
+            <div>
+              <label for="metricEngagement">Engagement Rate %</label>
+              <input type="number" id="metricEngagement" min="0" max="100" step="0.01" placeholder="e.g. 4.5">
+            </div>
+          </div>
+          <button type="submit" class="submit-btn" style="width:auto; padding:11px 22px;">Save Snapshot</button>
+          <p class="form-msg" id="creatorMetricMsg"></p>
+        </form>
+        <div id="creatorMetricList" style="margin-top:20px;"></div>
+      </div>
+
       <div class="panel" style="margin-bottom:0;">
-        <div class="placeholder-card">Coming soon — track followers, views, engagement, and custom growth targets here.</div>
+        <h2>Growth Targets</h2>
+        <div id="creatorTargetList" style="margin-bottom:20px;"></div>
+        <form id="creatorTargetForm">
+          <div class="form-row">
+            <div>
+              <label for="targetPlatform">Platform</label>
+              <select id="targetPlatform">
+                <option>YouTube</option>
+                <option>Instagram</option>
+                <option>TikTok</option>
+                <option>X / Twitter</option>
+                <option>Twitch</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="targetMetric">Metric</label>
+              <select id="targetMetric">
+                <option value="followers">Followers</option>
+                <option value="views">Views</option>
+                <option value="engagement_rate">Engagement Rate %</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="targetValue">Target Value</label>
+              <input type="number" id="targetValue" min="0" step="0.01" placeholder="e.g. 10000" required>
+            </div>
+            <div>
+              <label for="targetDate">Target Date <span style="color:var(--ink-faint);">(optional)</span></label>
+              <input type="date" id="targetDate">
+            </div>
+          </div>
+          <button type="submit" class="submit-btn" style="width:auto; padding:11px 22px;">Set Target</button>
+          <p class="form-msg" id="creatorTargetMsg"></p>
+        </form>
       </div>
     </div>
   </section>
@@ -1127,6 +1245,8 @@
       document.querySelectorAll(".goal-pane").forEach(x => x.classList.remove("active"));
       p.classList.add("active");
       document.getElementById(p.dataset.pane).classList.add("active");
+      if (p.dataset.pane === "goal-investments") { loadHoldings(); updateGrowthCalculator(); }
+      if (p.dataset.pane === "goal-creator") { loadCreatorMetrics(); loadCreatorTargets(); }
     });
   });
 
@@ -1244,6 +1364,12 @@
     });
     document.getElementById("brandHome").addEventListener("click", () => showPage("dashboard"));
     document.getElementById("onboardingForm").addEventListener("submit", saveOnboarding);
+    document.getElementById("creatorMetricForm").addEventListener("submit", addCreatorMetric);
+    document.getElementById("creatorTargetForm").addEventListener("submit", addCreatorTarget);
+    document.getElementById("creatorChartPlatform").addEventListener("change", () => loadCreatorMetrics());
+    document.getElementById("creatorChartMetric").addEventListener("change", () => loadCreatorMetrics());
+    document.getElementById("metricDate").valueAsDate = new Date();
+    populateCreatorPlatformFilter();
 
     buildBudgetCategoryInputs();
     await loadOpeningBalance();
@@ -1634,6 +1760,234 @@
     document.getElementById("holdingName").value = "";
     document.getElementById("holdingAmount").value = "";
     loadHoldings();
+  }
+
+  // ---------- Creator Metrics ----------
+  const METRIC_LABELS = { followers: "Followers", views: "Views", engagement_rate: "Engagement Rate" };
+  const CREATOR_PLATFORMS = ["YouTube", "Instagram", "TikTok", "X / Twitter", "Twitch", "Other"];
+
+  function populateCreatorPlatformFilter() {
+    const sel = document.getElementById("creatorChartPlatform");
+    sel.innerHTML = "";
+    CREATOR_PLATFORMS.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p; opt.textContent = p;
+      sel.appendChild(opt);
+    });
+  }
+
+  function formatMetricValue(type, value) {
+    if (value == null) return "—";
+    if (type === "engagement_rate") return Number(value).toFixed(2) + "%";
+    return Number(value).toLocaleString("en-US");
+  }
+
+  async function loadCreatorMetrics() {
+    const { data, error } = await supabaseClient.from("creator_metrics").select("*").order("snapshot_date", { ascending: false });
+    if (error) { console.error(error); return; }
+    renderCreatorStatCards(data || []);
+    renderCreatorMetricList((data || []).slice(0, 10));
+    renderCreatorTrendChart(data || []);
+  }
+
+  function renderCreatorStatCards(metrics) {
+    const container = document.getElementById("creatorStatsCards");
+    const empty = document.getElementById("creatorStatsEmpty");
+    container.innerHTML = "";
+    if (metrics.length === 0) { empty.style.display = "block"; return; }
+    empty.style.display = "none";
+
+    const latestByPlatform = {};
+    metrics.forEach(m => {
+      if (!latestByPlatform[m.platform] || m.snapshot_date > latestByPlatform[m.platform].snapshot_date) {
+        latestByPlatform[m.platform] = m;
+      }
+    });
+
+    Object.values(latestByPlatform).forEach(m => {
+      const card = document.createElement("div");
+      card.className = "creator-stat-card";
+      card.innerHTML = `
+        <p class="cs-platform">${escapeHtml(m.platform)}</p>
+        <div class="cs-row"><span>Followers</span><b>${formatMetricValue("followers", m.followers)}</b></div>
+        <div class="cs-row"><span>Views</span><b>${formatMetricValue("views", m.views)}</b></div>
+        <div class="cs-row"><span>Engagement</span><b>${formatMetricValue("engagement_rate", m.engagement_rate)}</b></div>
+        <p class="cs-date">as of ${m.snapshot_date}</p>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function renderCreatorMetricList(metrics) {
+    const list = document.getElementById("creatorMetricList");
+    list.innerHTML = "";
+    if (metrics.length === 0) return;
+    metrics.forEach(m => {
+      const row = document.createElement("div");
+      row.className = "tx-row";
+      row.innerHTML = `
+        <div class="tx-left">
+          <span class="tx-dot savings"></span>
+          <div>
+            <span class="tx-cat">${escapeHtml(m.platform)}</span>
+            <span class="tx-date">${m.snapshot_date}</span>
+            <div class="tx-desc">${formatMetricValue("followers", m.followers)} followers · ${formatMetricValue("views", m.views)} views · ${formatMetricValue("engagement_rate", m.engagement_rate)} eng.</div>
+          </div>
+        </div>
+        <button class="tx-del" data-id="${m.id}">Delete</button>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll(".tx-del").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await supabaseClient.from("creator_metrics").delete().eq("id", btn.getAttribute("data-id"));
+        loadCreatorMetrics();
+        loadCreatorTargets();
+      });
+    });
+  }
+
+  let creatorTrendChart = null;
+  function renderCreatorTrendChart(allMetrics) {
+    const platform = document.getElementById("creatorChartPlatform").value;
+    const metricType = document.getElementById("creatorChartMetric").value;
+    const filtered = allMetrics
+      .filter(m => m.platform === platform && m[metricType] != null)
+      .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
+
+    const canvas = document.getElementById("creatorTrendChart");
+    const emptyMsg = document.getElementById("creatorTrendEmpty");
+
+    if (filtered.length < 2) {
+      if (creatorTrendChart) { creatorTrendChart.destroy(); creatorTrendChart = null; }
+      canvas.style.display = "none";
+      emptyMsg.style.display = "block";
+      return;
+    }
+    canvas.style.display = "block";
+    emptyMsg.style.display = "none";
+
+    const labels = filtered.map(m => m.snapshot_date);
+    const values = filtered.map(m => Number(m[metricType]));
+    const pointDelay = 1500 / values.length;
+    const previousY = (ctx2) => ctx2.index === 0
+      ? ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0])
+      : ctx2.chart.getDatasetMeta(ctx2.datasetIndex).data[ctx2.index - 1].getProps(["y"], true).y;
+
+    if (creatorTrendChart) creatorTrendChart.destroy();
+    creatorTrendChart = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: { labels, datasets: [{ label: METRIC_LABELS[metricType], data: values, borderColor: "#E8B84B", backgroundColor: "#E8B84B22", fill: true, tension: 0.25, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: {
+          x: { type: "number", easing: "linear", duration: pointDelay, from: NaN, delay(ctx2) { if (ctx2.type !== "data" || ctx2.xStarted) return 0; ctx2.xStarted = true; return ctx2.index * pointDelay; } },
+          y: { type: "number", easing: "linear", duration: pointDelay, from: previousY, delay(ctx2) { if (ctx2.type !== "data" || ctx2.yStarted) return 0; ctx2.yStarted = true; return ctx2.index * pointDelay; } }
+        },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => formatMetricValue(metricType, item.parsed.y) } } },
+        scales: {
+          x: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 } } },
+          y: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => formatMetricValue(metricType, val) } }
+        }
+      }
+    });
+  }
+
+  async function addCreatorMetric(e) {
+    e.preventDefault();
+    const msg = document.getElementById("creatorMetricMsg");
+    msg.className = "form-msg";
+    const platform = document.getElementById("metricPlatform").value;
+    const date = document.getElementById("metricDate").value;
+    const followers = document.getElementById("metricFollowers").value;
+    const views = document.getElementById("metricViews").value;
+    const engagement = document.getElementById("metricEngagement").value;
+
+    if (!followers && !views && !engagement) {
+      msg.className = "form-msg error";
+      msg.textContent = "Enter at least one stat.";
+      return;
+    }
+
+    const { error } = await supabaseClient.from("creator_metrics").insert({
+      user_id: currentUser.id, platform, snapshot_date: date,
+      followers: followers || null, views: views || null, engagement_rate: engagement || null
+    });
+    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
+
+    msg.className = "form-msg ok";
+    msg.textContent = "Snapshot saved.";
+    document.getElementById("metricFollowers").value = "";
+    document.getElementById("metricViews").value = "";
+    document.getElementById("metricEngagement").value = "";
+    loadCreatorMetrics();
+    loadCreatorTargets();
+  }
+
+  async function loadCreatorTargets() {
+    const { data: targets, error } = await supabaseClient.from("creator_targets").select("*").order("created_at", { ascending: false });
+    if (error) { console.error(error); return; }
+    const { data: metrics } = await supabaseClient.from("creator_metrics").select("*").order("snapshot_date", { ascending: false });
+    renderCreatorTargets(targets || [], metrics || []);
+  }
+
+  function renderCreatorTargets(targets, metrics) {
+    const list = document.getElementById("creatorTargetList");
+    list.innerHTML = "";
+    if (targets.length === 0) {
+      list.innerHTML = '<p class="empty-state">No growth targets set yet.</p>';
+      return;
+    }
+    targets.forEach(t => {
+      const latest = metrics.find(m => m.platform === t.platform && m[t.metric_type] != null);
+      const current = latest ? Number(latest[t.metric_type]) : 0;
+      const pct = Math.min(100, (current / Number(t.target_value)) * 100);
+      let metaText = `${formatMetricValue(t.metric_type, current)} of ${formatMetricValue(t.metric_type, t.target_value)}`;
+      if (t.target_date) {
+        const daysLeft = Math.ceil((new Date(t.target_date) - new Date(new Date().toDateString())) / 86400000);
+        metaText += daysLeft >= 0 ? ` · ${daysLeft}d left` : ` · past target date`;
+      }
+      const row = document.createElement("div");
+      row.className = "target-row";
+      row.innerHTML = `
+        <div class="target-head">
+          <span class="target-label">${escapeHtml(t.platform)} — ${METRIC_LABELS[t.metric_type]}<span class="num">${pct.toFixed(0)}%</span></span>
+          <button class="tx-del" data-id="${t.id}">Delete</button>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+        <div class="target-meta"><span>${metaText}</span></div>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll(".tx-del").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await supabaseClient.from("creator_targets").delete().eq("id", btn.getAttribute("data-id"));
+        loadCreatorTargets();
+      });
+    });
+  }
+
+  async function addCreatorTarget(e) {
+    e.preventDefault();
+    const msg = document.getElementById("creatorTargetMsg");
+    msg.className = "form-msg";
+    const platform = document.getElementById("targetPlatform").value;
+    const metricType = document.getElementById("targetMetric").value;
+    const targetValue = parseFloat(document.getElementById("targetValue").value);
+    const targetDate = document.getElementById("targetDate").value || null;
+
+    if (!targetValue || targetValue <= 0) { msg.className = "form-msg error"; msg.textContent = "Enter a target value greater than 0."; return; }
+
+    const { error } = await supabaseClient.from("creator_targets").insert({
+      user_id: currentUser.id, platform, metric_type: metricType, target_value: targetValue, target_date: targetDate
+    });
+    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
+
+    msg.className = "form-msg ok";
+    msg.textContent = "Target set.";
+    document.getElementById("targetValue").value = "";
+    document.getElementById("targetDate").value = "";
+    loadCreatorTargets();
   }
 
   // ---------- Growth calculator ----------
