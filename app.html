@@ -580,6 +580,27 @@
   .progress-fill{ height: 100%; background: var(--savings); border-radius: 4px; transition: width 0.6s ease; }
   .target-meta{ display:flex; justify-content: space-between; font-size: 11.5px; color: var(--ink-faint); margin-top: 6px; }
 
+  .platform-connect-row{ display:flex; flex-wrap: wrap; gap: 14px; }
+  .platform-circle{
+    width: 38px; height: 38px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600;
+    color: #fff; cursor: pointer; border: none; flex-shrink: 0;
+    opacity: 0.88; transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .platform-circle:hover{ opacity: 1; transform: scale(1.08); }
+
+  .notes-toggle-btn{
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 50%;
+    width: 34px; height: 34px; font-size: 15px; cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .notes-toggle-btn:hover{ border-color: var(--savings); }
+  .insight-prompt{
+    font-family: 'Bitter', serif; font-weight: 600; font-size: 14.5px;
+    color: var(--insight-pos); margin: 0 0 14px; line-height: 1.4;
+  }
+
   .recurring-summary{ display:flex; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
   .recurring-row{
     display:flex; align-items:center; justify-content: space-between;
@@ -913,36 +934,31 @@
         <h2>Growth Trend</h2>
         <div class="form-row" style="margin-bottom:16px;">
           <div>
-            <label for="creatorChartPlatform">Platform</label>
+            <label for="creatorChartPlatform">Platform / Channel</label>
             <select id="creatorChartPlatform"></select>
           </div>
           <div>
             <label for="creatorChartMetric">Metric</label>
-            <select id="creatorChartMetric">
-              <option value="followers">Followers</option>
-              <option value="views">Views</option>
-              <option value="engagement_rate">Engagement Rate</option>
-            </select>
+            <select id="creatorChartMetric"></select>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="creatorTrendChart"></canvas></div>
-        <p class="empty-state" id="creatorTrendEmpty" style="display:none;">Log at least two snapshots for this platform to see a trend.</p>
+        <p class="empty-state" id="creatorTrendEmpty" style="display:none;">Log at least two snapshots with the same metric name to see a trend.</p>
       </div>
 
       <div class="panel">
         <h2>Log a Snapshot</h2>
+        <p style="font-size:12px; color: var(--ink-faint); margin:-10px 0 18px;">Works for any kind of creative business — a YouTube channel, an Etsy shop, a mentorship practice, a lemonade stand. Name your own metrics below.</p>
         <form id="creatorMetricForm">
           <div class="form-row">
             <div>
-              <label for="metricPlatform">Platform</label>
-              <select id="metricPlatform">
-                <option>YouTube</option>
-                <option>Instagram</option>
-                <option>TikTok</option>
-                <option>X / Twitter</option>
-                <option>Twitch</option>
-                <option>Other</option>
-              </select>
+              <label for="metricPlatform">Platform / Channel name</label>
+              <input type="text" id="metricPlatform" list="platformSuggestions" placeholder="e.g. YouTube, Etsy Shop, Consulting" required>
+              <datalist id="platformSuggestions">
+                <option value="YouTube"><option value="Instagram"><option value="TikTok">
+                <option value="Etsy Shop"><option value="Spotify"><option value="Patreon">
+                <option value="Substack"><option value="Consulting"><option value="Mentorship">
+              </datalist>
             </div>
             <div>
               <label for="metricDate">Date</label>
@@ -951,47 +967,57 @@
           </div>
           <div class="form-row">
             <div>
-              <label for="metricFollowers">Followers</label>
-              <input type="number" id="metricFollowers" min="0" step="1" placeholder="e.g. 12400">
+              <label for="metric1Label">Metric 1 name</label>
+              <input type="text" id="metric1Label" list="metricSuggestions" placeholder="e.g. Followers, Sales, Clients">
             </div>
             <div>
-              <label for="metricViews">Views <span style="color:var(--ink-faint);">(this period)</span></label>
-              <input type="number" id="metricViews" min="0" step="1" placeholder="e.g. 85000">
-            </div>
-            <div>
-              <label for="metricEngagement">Engagement Rate %</label>
-              <input type="number" id="metricEngagement" min="0" max="100" step="0.01" placeholder="e.g. 4.5">
+              <label for="metric1Value">Value</label>
+              <input type="number" id="metric1Value" step="0.01" placeholder="e.g. 12400">
             </div>
           </div>
+          <div class="form-row">
+            <div>
+              <label for="metric2Label">Metric 2 name <span style="color:var(--ink-faint);">(optional)</span></label>
+              <input type="text" id="metric2Label" list="metricSuggestions" placeholder="e.g. Views, Orders, Revenue">
+            </div>
+            <div>
+              <label for="metric2Value">Value</label>
+              <input type="number" id="metric2Value" step="0.01" placeholder="e.g. 85000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label for="metric3Label">Metric 3 name <span style="color:var(--ink-faint);">(optional)</span></label>
+              <input type="text" id="metric3Label" list="metricSuggestions" placeholder="e.g. Engagement Rate, Reviews">
+            </div>
+            <div>
+              <label for="metric3Value">Value</label>
+              <input type="number" id="metric3Value" step="0.01" placeholder="e.g. 4.5">
+            </div>
+          </div>
+          <datalist id="metricSuggestions">
+            <option value="Followers"><option value="Views"><option value="Engagement Rate">
+            <option value="Sales"><option value="Orders"><option value="Revenue">
+            <option value="Clients"><option value="Leads"><option value="Listens/Downloads">
+          </datalist>
           <button type="submit" class="submit-btn" style="width:auto; padding:11px 22px;">Save Snapshot</button>
           <p class="form-msg" id="creatorMetricMsg"></p>
         </form>
         <div id="creatorMetricList" style="margin-top:20px;"></div>
       </div>
 
-      <div class="panel" style="margin-bottom:0;">
+      <div class="panel">
         <h2>Growth Targets</h2>
         <div id="creatorTargetList" style="margin-bottom:20px;"></div>
         <form id="creatorTargetForm">
           <div class="form-row">
             <div>
-              <label for="targetPlatform">Platform</label>
-              <select id="targetPlatform">
-                <option>YouTube</option>
-                <option>Instagram</option>
-                <option>TikTok</option>
-                <option>X / Twitter</option>
-                <option>Twitch</option>
-                <option>Other</option>
-              </select>
+              <label for="targetPlatform">Platform / Channel</label>
+              <input type="text" id="targetPlatform" list="platformSuggestions" placeholder="e.g. YouTube, Etsy Shop" required>
             </div>
             <div>
-              <label for="targetMetric">Metric</label>
-              <select id="targetMetric">
-                <option value="followers">Followers</option>
-                <option value="views">Views</option>
-                <option value="engagement_rate">Engagement Rate %</option>
-              </select>
+              <label for="targetMetricLabel">Metric name</label>
+              <input type="text" id="targetMetricLabel" list="metricSuggestions" placeholder="e.g. Followers, Sales" required>
             </div>
           </div>
           <div class="form-row">
@@ -1007,6 +1033,27 @@
           <button type="submit" class="submit-btn" style="width:auto; padding:11px 22px;">Set Target</button>
           <p class="form-msg" id="creatorTargetMsg"></p>
         </form>
+      </div>
+
+      <div class="panel" style="margin-bottom:0;">
+        <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 4px;">
+          <h2 style="margin-bottom:0;">Notes</h2>
+          <button type="button" class="notes-toggle-btn" id="notesToggleBtn" title="Notes & prompts">💬</button>
+        </div>
+        <p style="font-size:12px; color: var(--ink-faint); margin:4px 0 16px;">A running journal — how things went, what worked, what to try next.</p>
+        <div id="notesPanel" style="display:none;">
+          <p class="insight-prompt" id="notesPrompt"></p>
+          <form id="creatorNoteForm">
+            <textarea id="creatorNoteText" rows="3" placeholder="Jot a quick note…" style="width:100%; background: var(--bg); border: 1px solid var(--line); border-radius: 3px; padding: 10px; color: var(--ink); font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; resize: vertical;"></textarea>
+            <button type="submit" class="submit-btn" style="width:auto; padding:10px 20px; margin-top:10px;">Save Note</button>
+          </form>
+          <div id="creatorNoteList" style="margin-top:18px;"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:0; margin-top:24px;">
+        <p class="section-label" style="margin-bottom:12px;">Connect a Platform</p>
+        <div id="platformConnectRow" class="platform-connect-row"></div>
       </div>
     </div>
   </section>
@@ -1098,6 +1145,14 @@
     </details>
 
     <details class="settings-item">
+      <summary><span class="settings-icon">P</span><span class="settings-text"><span class="settings-title">Platform Connections</span><span class="settings-desc">YouTube, Etsy, Spotify & more</span></span></summary>
+      <div class="settings-body">
+        <p style="font-size:12.5px; color: var(--ink-faint); margin: 0 0 16px;">Connect the places you earn from to pull in stats automatically. Each one needs that platform's own developer access and a backend server, so these aren't live yet — tap one to see its status.</p>
+        <div id="platformConnectRowSettings" class="platform-connect-row"></div>
+      </div>
+    </details>
+
+    <details class="settings-item">
       <summary><span class="settings-icon">A</span><span class="settings-text"><span class="settings-title">Appearance</span><span class="settings-desc">Color theme</span></span></summary>
       <div class="settings-body">
         <div class="theme-swatches">
@@ -1153,7 +1208,7 @@
 
 <script src="supabaseClient.js"></script>
 <script>
-  const EXPENSE_CATEGORIES = ["Housing", "Transport", "Food", "Leisure", "Healthcare", "Shopping", "Education", "Miscellaneous"];
+  const EXPENSE_CATEGORIES = ["Housing", "Transport", "Food", "Leisure", "Healthcare", "Shopping", "Education", "Production Costs", "Miscellaneous"];
   const INCOME_CATEGORIES = ["Sponsorship", "Ad Revenue", "Affiliate", "Product Sales", "Freelance", "Other Income"];
   const SAVINGS_CATEGORIES = ["Emergency Fund", "Investment", "Travel Fund", "Retirement", "Other Savings"];
   const DEBT_CATEGORIES = ["Credit Card", "Loan Payment", "Other Debt"];
@@ -1161,7 +1216,7 @@
   const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£", TRY: "₺", JPY: "¥", CAD: "$", AUD: "$", INR: "₹" };
   const CATEGORY_COLORS = {
     Housing: "#D98E51", Transport: "#6FA8BF", Food: "#BF6F8F", Leisure: "#A88FBF",
-    Healthcare: "#6FBF9E", Shopping: "#BFA76F", Education: "#6F8FBF", Miscellaneous: "#8A8F87"
+    Healthcare: "#6FBF9E", Shopping: "#BFA76F", Education: "#6F8FBF", "Production Costs": "#8F6FBF", Miscellaneous: "#8A8F87"
   };
   const HOLDING_COLORS = ["#8FBF6F", "#E8B84B", "#6FA8BF", "#BF6F8F", "#A88FBF", "#D98E51", "#6FBF9E", "#C97B84", "#6F8FBF", "#BFA76F"];
 
@@ -1366,10 +1421,9 @@
     document.getElementById("onboardingForm").addEventListener("submit", saveOnboarding);
     document.getElementById("creatorMetricForm").addEventListener("submit", addCreatorMetric);
     document.getElementById("creatorTargetForm").addEventListener("submit", addCreatorTarget);
-    document.getElementById("creatorChartPlatform").addEventListener("change", () => loadCreatorMetrics());
-    document.getElementById("creatorChartMetric").addEventListener("change", () => loadCreatorMetrics());
     document.getElementById("metricDate").valueAsDate = new Date();
-    populateCreatorPlatformFilter();
+    renderPlatformConnectRow("platformConnectRow");
+    renderPlatformConnectRow("platformConnectRowSettings");
 
     buildBudgetCategoryInputs();
     await loadOpeningBalance();
@@ -1763,31 +1817,107 @@
   }
 
   // ---------- Creator Metrics ----------
-  const METRIC_LABELS = { followers: "Followers", views: "Views", engagement_rate: "Engagement Rate" };
-  const CREATOR_PLATFORMS = ["YouTube", "Instagram", "TikTok", "X / Twitter", "Twitch", "Other"];
+  const PLATFORM_CONNECT_LIST = [
+    { name: "YouTube", initials: "YT", color: "#D64933" },
+    { name: "Instagram", initials: "IG", color: "#C77DA8" },
+    { name: "TikTok", initials: "TT", color: "#2B2B2B" },
+    { name: "Etsy", initials: "ET", color: "#E8A33D" },
+    { name: "Spotify", initials: "SP", color: "#3FA85C" },
+    { name: "Patreon", initials: "PT", color: "#FF6F61" },
+    { name: "Substack", initials: "SU", color: "#FF8A3D" },
+    { name: "Twitch", initials: "TW", color: "#8F6FBF" }
+  ];
 
-  function populateCreatorPlatformFilter() {
-    const sel = document.getElementById("creatorChartPlatform");
-    sel.innerHTML = "";
-    CREATOR_PLATFORMS.forEach(p => {
-      const opt = document.createElement("option");
-      opt.value = p; opt.textContent = p;
-      sel.appendChild(opt);
+  function renderPlatformConnectRow(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = "";
+    PLATFORM_CONNECT_LIST.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "platform-circle";
+      btn.style.background = p.color;
+      btn.textContent = p.initials;
+      btn.title = p.name;
+      btn.addEventListener("click", () => {
+        alert(`Connecting ${p.name} isn't available yet — it needs ${p.name}'s developer API and a backend server to hold the login securely. On the roadmap!`);
+      });
+      container.appendChild(btn);
     });
   }
 
-  function formatMetricValue(type, value) {
-    if (value == null) return "—";
-    if (type === "engagement_rate") return Number(value).toFixed(2) + "%";
-    return Number(value).toLocaleString("en-US");
+  function formatMetricValue(value) {
+    if (value == null || value === "") return "—";
+    return Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  }
+
+  function metricSlots(m) {
+    // Returns the non-empty {label, value} pairs for a snapshot row
+    const slots = [];
+    [1, 2, 3].forEach(n => {
+      const label = m[`metric${n}_label`];
+      const value = m[`metric${n}_value`];
+      if (label && value != null) slots.push({ label, value: Number(value) });
+    });
+    return slots;
+  }
+
+  function getMetricValue(m, label) {
+    const match = metricSlots(m).find(s => s.label.trim().toLowerCase() === label.trim().toLowerCase());
+    return match ? match.value : null;
   }
 
   async function loadCreatorMetrics() {
     const { data, error } = await supabaseClient.from("creator_metrics").select("*").order("snapshot_date", { ascending: false });
     if (error) { console.error(error); return; }
-    renderCreatorStatCards(data || []);
-    renderCreatorMetricList((data || []).slice(0, 10));
-    renderCreatorTrendChart(data || []);
+    const metrics = data || [];
+    populateCreatorChartPlatform(metrics);
+    renderCreatorStatCards(metrics);
+    renderCreatorMetricList(metrics.slice(0, 10));
+    renderCreatorTrendChart(metrics);
+  }
+
+  function populateCreatorChartPlatform(metrics) {
+    const sel = document.getElementById("creatorChartPlatform");
+    const platforms = [...new Set(metrics.map(m => m.platform))];
+    const prevValue = sel.value;
+    sel.innerHTML = "";
+    if (platforms.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = ""; opt.textContent = "No platforms logged yet";
+      sel.appendChild(opt);
+      populateCreatorChartMetric(metrics, "");
+      return;
+    }
+    platforms.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p; opt.textContent = p;
+      sel.appendChild(opt);
+    });
+    sel.value = platforms.includes(prevValue) ? prevValue : platforms[0];
+    populateCreatorChartMetric(metrics, sel.value);
+  }
+
+  function populateCreatorChartMetric(metrics, platform) {
+    const sel = document.getElementById("creatorChartMetric");
+    const prevValue = sel.value;
+    const labelsForPlatform = new Set();
+    metrics.filter(m => m.platform === platform).forEach(m => {
+      metricSlots(m).forEach(s => labelsForPlatform.add(s.label));
+    });
+    const labels = [...labelsForPlatform];
+    sel.innerHTML = "";
+    if (labels.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = ""; opt.textContent = "—";
+      sel.appendChild(opt);
+      return;
+    }
+    labels.forEach(l => {
+      const opt = document.createElement("option");
+      opt.value = l; opt.textContent = l;
+      sel.appendChild(opt);
+    });
+    sel.value = labels.includes(prevValue) ? prevValue : labels[0];
   }
 
   function renderCreatorStatCards(metrics) {
@@ -1805,13 +1935,12 @@
     });
 
     Object.values(latestByPlatform).forEach(m => {
+      const slots = metricSlots(m);
       const card = document.createElement("div");
       card.className = "creator-stat-card";
       card.innerHTML = `
         <p class="cs-platform">${escapeHtml(m.platform)}</p>
-        <div class="cs-row"><span>Followers</span><b>${formatMetricValue("followers", m.followers)}</b></div>
-        <div class="cs-row"><span>Views</span><b>${formatMetricValue("views", m.views)}</b></div>
-        <div class="cs-row"><span>Engagement</span><b>${formatMetricValue("engagement_rate", m.engagement_rate)}</b></div>
+        ${slots.map(s => `<div class="cs-row"><span>${escapeHtml(s.label)}</span><b>${formatMetricValue(s.value)}</b></div>`).join("")}
         <p class="cs-date">as of ${m.snapshot_date}</p>
       `;
       container.appendChild(card);
@@ -1823,6 +1952,7 @@
     list.innerHTML = "";
     if (metrics.length === 0) return;
     metrics.forEach(m => {
+      const summary = metricSlots(m).map(s => `${s.label}: ${formatMetricValue(s.value)}`).join(" · ");
       const row = document.createElement("div");
       row.className = "tx-row";
       row.innerHTML = `
@@ -1831,7 +1961,7 @@
           <div>
             <span class="tx-cat">${escapeHtml(m.platform)}</span>
             <span class="tx-date">${m.snapshot_date}</span>
-            <div class="tx-desc">${formatMetricValue("followers", m.followers)} followers · ${formatMetricValue("views", m.views)} views · ${formatMetricValue("engagement_rate", m.engagement_rate)} eng.</div>
+            <div class="tx-desc">${escapeHtml(summary)}</div>
           </div>
         </div>
         <button class="tx-del" data-id="${m.id}">Delete</button>
@@ -1850,13 +1980,14 @@
   let creatorTrendChart = null;
   function renderCreatorTrendChart(allMetrics) {
     const platform = document.getElementById("creatorChartPlatform").value;
-    const metricType = document.getElementById("creatorChartMetric").value;
-    const filtered = allMetrics
-      .filter(m => m.platform === platform && m[metricType] != null)
-      .sort((a, b) => a.snapshot_date.localeCompare(b.snapshot_date));
-
+    const metricLabel = document.getElementById("creatorChartMetric").value;
     const canvas = document.getElementById("creatorTrendChart");
     const emptyMsg = document.getElementById("creatorTrendEmpty");
+
+    const filtered = (!platform || !metricLabel) ? [] : allMetrics
+      .filter(m => m.platform === platform && getMetricValue(m, metricLabel) != null)
+      .map(m => ({ date: m.snapshot_date, value: getMetricValue(m, metricLabel) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
 
     if (filtered.length < 2) {
       if (creatorTrendChart) { creatorTrendChart.destroy(); creatorTrendChart = null; }
@@ -1867,8 +1998,8 @@
     canvas.style.display = "block";
     emptyMsg.style.display = "none";
 
-    const labels = filtered.map(m => m.snapshot_date);
-    const values = filtered.map(m => Number(m[metricType]));
+    const labels = filtered.map(f => f.date);
+    const values = filtered.map(f => f.value);
     const pointDelay = 1500 / values.length;
     const previousY = (ctx2) => ctx2.index === 0
       ? ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0])
@@ -1877,51 +2008,71 @@
     if (creatorTrendChart) creatorTrendChart.destroy();
     creatorTrendChart = new Chart(canvas.getContext("2d"), {
       type: "line",
-      data: { labels, datasets: [{ label: METRIC_LABELS[metricType], data: values, borderColor: "#E8B84B", backgroundColor: "#E8B84B22", fill: true, tension: 0.25, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
+      data: { labels, datasets: [{ label: metricLabel, data: values, borderColor: "#E8B84B", backgroundColor: "#E8B84B22", fill: true, tension: 0.25, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         animation: {
           x: { type: "number", easing: "linear", duration: pointDelay, from: NaN, delay(ctx2) { if (ctx2.type !== "data" || ctx2.xStarted) return 0; ctx2.xStarted = true; return ctx2.index * pointDelay; } },
           y: { type: "number", easing: "linear", duration: pointDelay, from: previousY, delay(ctx2) { if (ctx2.type !== "data" || ctx2.yStarted) return 0; ctx2.yStarted = true; return ctx2.index * pointDelay; } }
         },
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => formatMetricValue(metricType, item.parsed.y) } } },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => formatMetricValue(item.parsed.y) } } },
         scales: {
           x: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 } } },
-          y: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => formatMetricValue(metricType, val) } }
+          y: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => formatMetricValue(val) } }
         }
       }
     });
   }
 
+  document.addEventListener("change", (e) => {
+    if (e.target && e.target.id === "creatorChartPlatform") {
+      supabaseClient.from("creator_metrics").select("*").order("snapshot_date", { ascending: false }).then(({ data }) => {
+        populateCreatorChartMetric(data || [], e.target.value);
+        renderCreatorTrendChart(data || []);
+      });
+    }
+    if (e.target && e.target.id === "creatorChartMetric") {
+      supabaseClient.from("creator_metrics").select("*").order("snapshot_date", { ascending: false }).then(({ data }) => {
+        renderCreatorTrendChart(data || []);
+      });
+    }
+  });
+
   async function addCreatorMetric(e) {
     e.preventDefault();
     const msg = document.getElementById("creatorMetricMsg");
     msg.className = "form-msg";
-    const platform = document.getElementById("metricPlatform").value;
+    const platform = document.getElementById("metricPlatform").value.trim();
     const date = document.getElementById("metricDate").value;
-    const followers = document.getElementById("metricFollowers").value;
-    const views = document.getElementById("metricViews").value;
-    const engagement = document.getElementById("metricEngagement").value;
+    const m1l = document.getElementById("metric1Label").value.trim();
+    const m1v = document.getElementById("metric1Value").value;
+    const m2l = document.getElementById("metric2Label").value.trim();
+    const m2v = document.getElementById("metric2Value").value;
+    const m3l = document.getElementById("metric3Label").value.trim();
+    const m3v = document.getElementById("metric3Value").value;
 
-    if (!followers && !views && !engagement) {
+    if (!platform || (!m1v && !m2v && !m3v)) {
       msg.className = "form-msg error";
-      msg.textContent = "Enter at least one stat.";
+      msg.textContent = "Enter a platform name and at least one metric value.";
       return;
     }
 
     const { error } = await supabaseClient.from("creator_metrics").insert({
       user_id: currentUser.id, platform, snapshot_date: date,
-      followers: followers || null, views: views || null, engagement_rate: engagement || null
+      metric1_label: m1l || null, metric1_value: m1v === "" ? null : m1v,
+      metric2_label: m2l || null, metric2_value: m2v === "" ? null : m2v,
+      metric3_label: m3l || null, metric3_value: m3v === "" ? null : m3v
     });
     if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
 
     msg.className = "form-msg ok";
     msg.textContent = "Snapshot saved.";
-    document.getElementById("metricFollowers").value = "";
-    document.getElementById("metricViews").value = "";
-    document.getElementById("metricEngagement").value = "";
+    document.getElementById("metric1Value").value = "";
+    document.getElementById("metric2Value").value = "";
+    document.getElementById("metric3Value").value = "";
     loadCreatorMetrics();
     loadCreatorTargets();
+    refreshNotesPrompt();
   }
 
   async function loadCreatorTargets() {
@@ -1939,10 +2090,10 @@
       return;
     }
     targets.forEach(t => {
-      const latest = metrics.find(m => m.platform === t.platform && m[t.metric_type] != null);
-      const current = latest ? Number(latest[t.metric_type]) : 0;
+      const latestWithMetric = metrics.find(m => m.platform === t.platform && getMetricValue(m, t.metric_label) != null);
+      const current = latestWithMetric ? getMetricValue(latestWithMetric, t.metric_label) : 0;
       const pct = Math.min(100, (current / Number(t.target_value)) * 100);
-      let metaText = `${formatMetricValue(t.metric_type, current)} of ${formatMetricValue(t.metric_type, t.target_value)}`;
+      let metaText = `${formatMetricValue(current)} of ${formatMetricValue(t.target_value)}`;
       if (t.target_date) {
         const daysLeft = Math.ceil((new Date(t.target_date) - new Date(new Date().toDateString())) / 86400000);
         metaText += daysLeft >= 0 ? ` · ${daysLeft}d left` : ` · past target date`;
@@ -1951,7 +2102,7 @@
       row.className = "target-row";
       row.innerHTML = `
         <div class="target-head">
-          <span class="target-label">${escapeHtml(t.platform)} — ${METRIC_LABELS[t.metric_type]}<span class="num">${pct.toFixed(0)}%</span></span>
+          <span class="target-label">${escapeHtml(t.platform)} — ${escapeHtml(t.metric_label)}<span class="num">${pct.toFixed(0)}%</span></span>
           <button class="tx-del" data-id="${t.id}">Delete</button>
         </div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
@@ -1971,15 +2122,19 @@
     e.preventDefault();
     const msg = document.getElementById("creatorTargetMsg");
     msg.className = "form-msg";
-    const platform = document.getElementById("targetPlatform").value;
-    const metricType = document.getElementById("targetMetric").value;
+    const platform = document.getElementById("targetPlatform").value.trim();
+    const metricLabel = document.getElementById("targetMetricLabel").value.trim();
     const targetValue = parseFloat(document.getElementById("targetValue").value);
     const targetDate = document.getElementById("targetDate").value || null;
 
-    if (!targetValue || targetValue <= 0) { msg.className = "form-msg error"; msg.textContent = "Enter a target value greater than 0."; return; }
+    if (!platform || !metricLabel || !targetValue || targetValue <= 0) {
+      msg.className = "form-msg error";
+      msg.textContent = "Fill in a platform, metric name, and a target value greater than 0.";
+      return;
+    }
 
     const { error } = await supabaseClient.from("creator_targets").insert({
-      user_id: currentUser.id, platform, metric_type: metricType, target_value: targetValue, target_date: targetDate
+      user_id: currentUser.id, platform, metric_label: metricLabel, target_value: targetValue, target_date: targetDate
     });
     if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
 
@@ -1989,6 +2144,81 @@
     document.getElementById("targetDate").value = "";
     loadCreatorTargets();
   }
+
+  // ---------- Notes journal (rule-based prompts, not AI) ----------
+  document.getElementById("notesToggleBtn").addEventListener("click", () => {
+    const panel = document.getElementById("notesPanel");
+    const isOpen = panel.style.display !== "none";
+    panel.style.display = isOpen ? "none" : "block";
+    if (!isOpen) { refreshNotesPrompt(); loadCreatorNotes(); }
+  });
+
+  async function refreshNotesPrompt() {
+    const { data } = await supabaseClient.from("creator_metrics").select("*").order("snapshot_date", { ascending: false }).limit(20);
+    const metrics = data || [];
+    const promptEl = document.getElementById("notesPrompt");
+    if (metrics.length === 0) {
+      promptEl.textContent = "How's your creative work going lately? Jot a quick note.";
+      return;
+    }
+    const latest = metrics[0];
+    const slots = metricSlots(latest);
+    if (slots.length === 0) {
+      promptEl.textContent = `How did things go on ${latest.platform} recently?`;
+      return;
+    }
+    const prior = metrics.find(m => m.platform === latest.platform && m.snapshot_date < latest.snapshot_date && getMetricValue(m, slots[0].label) != null);
+    if (prior) {
+      const priorVal = getMetricValue(prior, slots[0].label);
+      const diff = slots[0].value - priorVal;
+      const pct = priorVal !== 0 ? ((diff / priorVal) * 100).toFixed(0) : null;
+      if (diff > 0) promptEl.textContent = `Your ${slots[0].label} on ${latest.platform} is up${pct ? " " + pct + "%" : ""} since last time — what worked well?`;
+      else if (diff < 0) promptEl.textContent = `Your ${slots[0].label} on ${latest.platform} dipped since last time — any idea why?`;
+      else promptEl.textContent = `Your ${slots[0].label} on ${latest.platform} held steady — anything new to try next?`;
+    } else {
+      promptEl.textContent = `How did your latest work on ${latest.platform} go? Any lessons learned?`;
+    }
+  }
+
+  async function loadCreatorNotes() {
+    const { data, error } = await supabaseClient.from("creator_notes").select("*").order("created_at", { ascending: false }).limit(15);
+    if (error) { console.error(error); return; }
+    const list = document.getElementById("creatorNoteList");
+    list.innerHTML = "";
+    (data || []).forEach(n => {
+      const row = document.createElement("div");
+      row.className = "tx-row";
+      row.innerHTML = `
+        <div class="tx-left">
+          <div>
+            <span class="tx-desc" style="margin-top:0;">${escapeHtml(n.note)}</span>
+            <div><span class="tx-date">${new Date(n.created_at).toLocaleDateString()}</span>${n.platform ? ` <span class="tx-date">· ${escapeHtml(n.platform)}</span>` : ""}</div>
+          </div>
+        </div>
+        <button class="tx-del" data-id="${n.id}">Delete</button>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll(".tx-del").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await supabaseClient.from("creator_notes").delete().eq("id", btn.getAttribute("data-id"));
+        loadCreatorNotes();
+      });
+    });
+  }
+
+  document.getElementById("creatorNoteForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const textEl = document.getElementById("creatorNoteText");
+    const note = textEl.value.trim();
+    if (!note) return;
+    const { data: latestMetric } = await supabaseClient.from("creator_metrics").select("platform").order("snapshot_date", { ascending: false }).limit(1).maybeSingle();
+    await supabaseClient.from("creator_notes").insert({ user_id: currentUser.id, platform: latestMetric ? latestMetric.platform : null, note });
+    textEl.value = "";
+    loadCreatorNotes();
+  });
+
+  // ---------- Growth calculator ----------
 
   // ---------- Growth calculator ----------
   function updateGrowthCalculator() {
