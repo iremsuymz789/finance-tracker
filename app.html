@@ -24,6 +24,8 @@
     --insight-pos: #9FB8E8;
     --insight-neg: #E0A9D0;
     --insight-neutral: #C9BFE8;
+    --flow-income: #8FBF6F; --flow-expense: #E0786A; --flow-savings: #7B8CDE;
+    --bar-ok: #8FBF6F; --bar-warn: #E8C14B; --bar-over: #D95C4B;
   }
   body[data-theme="midnight"]{
     --bg: #0D1220;
@@ -40,6 +42,8 @@
     --insight-pos: #E8C08F;
     --insight-neg: #E88F9F;
     --insight-neutral: #D9C9A8;
+    --flow-income: #7FC8A9; --flow-expense: #E88E9B; --flow-savings: #8E9BE8;
+    --bar-ok: #7FC8A9; --bar-warn: #E6C27A; --bar-over: #E0667A;
   }
   body[data-theme="sand"]{
     --bg: #F4EFE6;
@@ -56,6 +60,8 @@
     --insight-pos: #3D7A8C;
     --insight-neg: #8B5A8F;
     --insight-neutral: #5A6B8C;
+    --flow-income: #5F8F52; --flow-expense: #C9695A; --flow-savings: #5B5FC7;
+    --bar-ok: #5F8F52; --bar-warn: #C99A2E; --bar-over: #C15139;
   }
   /* Kitty Mode overrides whichever base theme is active */
   body.kitty-mode{
@@ -73,6 +79,8 @@
     --insight-pos: #FF8FC7;
     --insight-neg: #FF6FA3;
     --insight-neutral: #C77DFF;
+    --flow-income: #6FBF8F; --flow-expense: #FF8FB0; --flow-savings: #8F7CFF;
+    --bar-ok: #6FBF8F; --bar-warn: #FFC24B; --bar-over: #FF5C8A;
   }
   *{ box-sizing: border-box; }
   body{
@@ -422,8 +430,23 @@
   .flow-row{ display:flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
   .flow-row:last-of-type{ border-bottom: none; }
   .flow-row .flow-label{ color: var(--ink-dim); }
-  .flow-row.add .flow-val{ color: var(--income); }
-  .flow-row.sub .flow-val{ color: var(--expense); }
+  .flow-row .flow-label{ display:flex; align-items:center; gap: 10px; }
+  .flow-row .flow-label::before{
+    content: ""; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    background: var(--flow-color, var(--ink-faint));
+  }
+  .flow-row .flow-val{ color: var(--flow-color, var(--ink)); font-weight: 600; }
+  .flow-row.flow-income{ --flow-color: var(--flow-income); }
+  .flow-row.flow-expense{ --flow-color: var(--flow-expense); }
+  .flow-row.flow-debt{ --flow-color: var(--debt); }
+  .flow-row.flow-savings{ --flow-color: var(--flow-savings); }
+  .flow-row.flow-income, .flow-row.flow-expense, .flow-row.flow-debt, .flow-row.flow-savings{
+    border-left: 2px solid var(--flow-color);
+    padding-left: 12px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--flow-color) 9%, transparent), transparent 70%);
+  }
+  .flow-row.total.positive{ --flow-color: var(--flow-income); }
+  .flow-row.total.negative{ --flow-color: var(--flow-expense); }
   .flow-row.total{ margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); border-bottom: none; }
   .flow-row.total .flow-label{ color: var(--ink); font-weight: 600; }
   .flow-row.total .flow-val{ font-size: 17px; font-weight: 600; }
@@ -438,6 +461,13 @@
   tr:last-child td{ border-bottom: none; }
   .variance-up{ color: var(--income); }
   .variance-down{ color: var(--expense); }
+  th:last-child{ text-align: left; padding-left: 14px; }
+  td.bar-cell{ text-align: left; padding-left: 14px; min-width: 150px; }
+  .bva-top{ display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; gap: 10px; }
+  .bva-pct{ font-size: 12px; font-weight: 600; }
+  .bva-sub{ font-size: 11px; color: var(--ink-faint); }
+  td.bar-cell .progress-track{ height: 6px; }
+  td.bar-cell .progress-fill{ transition: width 0.8s cubic-bezier(.22,.68,0,1.01); }
 
   .form-row{ display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
   .form-row > div{ flex: 1; min-width: 110px; }
@@ -719,12 +749,12 @@
     <div class="grid-2">
       <div class="panel" style="margin-bottom:0;">
         <h2>Cash Flow Breakdown</h2>
-        <div class="flow-row"><span class="flow-label">Incoming Revenue</span><span class="flow-val num" id="flowIncome">$0.00</span></div>
-        <div class="flow-row sub"><span class="flow-label">− Variable Expenses</span><span class="flow-val num" id="flowVariable">$0.00</span></div>
-        <div class="flow-row sub"><span class="flow-label">− Fixed Expenses</span><span class="flow-val num" id="flowFixed">$0.00</span></div>
-        <div class="flow-row sub"><span class="flow-label">− Debt Obligations</span><span class="flow-val num" id="flowDebt">$0.00</span></div>
-        <div class="flow-row sub"><span class="flow-label">− Allocated Savings &amp; Investments</span><span class="flow-val num" id="flowSavings">$0.00</span></div>
-        <div class="flow-row total"><span class="flow-label">Net Change This Period</span><span class="flow-val num" id="flowNet">$0.00</span></div>
+        <div class="flow-row flow-income"><span class="flow-label">Incoming Revenue</span><span class="flow-val num" id="flowIncome">$0.00</span></div>
+        <div class="flow-row flow-expense"><span class="flow-label">− Variable Expenses</span><span class="flow-val num" id="flowVariable">$0.00</span></div>
+        <div class="flow-row flow-expense"><span class="flow-label">− Fixed Expenses</span><span class="flow-val num" id="flowFixed">$0.00</span></div>
+        <div class="flow-row flow-debt"><span class="flow-label">− Debt Obligations</span><span class="flow-val num" id="flowDebt">$0.00</span></div>
+        <div class="flow-row flow-savings"><span class="flow-label">− Allocated Savings &amp; Investments</span><span class="flow-val num" id="flowSavings">$0.00</span></div>
+        <div class="flow-row total" id="flowNetRow"><span class="flow-label">Net Change This Period</span><span class="flow-val num" id="flowNet">$0.00</span></div>
       </div>
 
       <div class="panel" style="margin-bottom:0;">
@@ -2827,6 +2857,9 @@
     document.getElementById("flowDebt").textContent = "-" + fmt(curr.debt);
     document.getElementById("flowSavings").textContent = "-" + fmt(curr.savings);
     document.getElementById("flowNet").textContent = fmt(curr.balance);
+    const netRow = document.getElementById("flowNetRow");
+    netRow.classList.toggle("positive", curr.balance >= 0);
+    netRow.classList.toggle("negative", curr.balance < 0);
 
     const budgetedTotalExpenses = EXPENSE_CATEGORIES.reduce((a, c) => a + (currentBudgets.categories[c] || 0), 0);
     const rows = [
@@ -2839,14 +2872,31 @@
     body.innerHTML = "";
     const anyBudgetSet = currentBudgets.income || currentBudgets.savings || currentBudgets.debt || budgetedTotalExpenses;
     rows.forEach(r => {
-      const diff = r.actual - r.planned;
-      const pct = r.planned !== 0 ? (diff / r.planned) * 100 : (r.actual !== 0 ? 100 : 0);
-      const isGood = r.higherIsBetter ? diff >= 0 : diff <= 0;
-      const arrow = diff === 0 ? "→" : (diff > 0 ? "↑" : "↓");
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${r.label}</td><td class="num">${fmt(r.planned)}</td><td class="num">${fmt(r.actual)}</td><td class="num ${isGood ? "variance-up" : "variance-down"}">${r.planned ? arrow + " " + Math.abs(pct).toFixed(0) + "%" : "—"}</td>`;
+      let varianceCell = `<td class="bar-cell"><span class="bva-sub">—</span></td>`;
+      if (r.planned) {
+        const ratio = (r.actual / r.planned) * 100;
+        let color, subText;
+        if (r.higherIsBetter) {
+          // Income / Savings: the goal is to reach or exceed the target
+          color = ratio >= 100 ? "var(--bar-ok)" : ratio >= 80 ? "var(--bar-warn)" : "var(--ink-faint)";
+          subText = r.actual >= r.planned ? `${fmt(r.actual - r.planned)} above` : `${fmt(r.planned - r.actual)} to go`;
+        } else {
+          // Spending / Debt: the goal is to stay under budget
+          color = ratio > 100 ? "var(--bar-over)" : ratio >= 80 ? "var(--bar-warn)" : "var(--bar-ok)";
+          subText = r.actual > r.planned ? `${fmt(r.actual - r.planned)} over` : `${fmt(r.planned - r.actual)} left`;
+        }
+        varianceCell = `<td class="bar-cell">
+          <div class="bva-top"><span class="bva-pct num" style="color:${color};">${Math.round(ratio)}%</span><span class="bva-sub">${subText}</span></div>
+          <div class="progress-track"><div class="progress-fill bva-fill" data-width="${Math.min(100, ratio)}" style="width:0; background:${color};"></div></div>
+        </td>`;
+      }
+      tr.innerHTML = `<td>${r.label}</td><td class="num">${fmt(r.planned)}</td><td class="num">${fmt(r.actual)}</td>${varianceCell}`;
       body.appendChild(tr);
     });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      body.querySelectorAll(".bva-fill").forEach(el => { el.style.width = el.dataset.width + "%"; });
+    }));
     document.getElementById("comparisonNote").textContent = anyBudgetSet ? "" : "No budget set for this period yet — set one in Transactions & Budget to see variance here.";
 
     renderTxList(current.slice(0, 12));
