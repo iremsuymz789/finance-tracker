@@ -669,6 +669,106 @@
     .page-container{ padding: 22px 16px 40px; }
     .topbar{ padding: 14px 16px; }
   }
+
+  html{ overflow-y: scroll; }
+
+  /* ---------- Transactions feed ---------- */
+  .tx-page-head{ display:flex; align-items:center; justify-content: space-between; margin-bottom: 18px; }
+  .tx-page-head h1.page-title{ margin: 0; }
+  .tx-add-btn{
+    display:flex; align-items:center; gap: 8px; border: none; cursor: pointer;
+    background: var(--savings); color: var(--bg); font-family: inherit; font-weight: 600; font-size: 13px;
+    padding: 10px 16px 10px 12px; border-radius: 22px; transition: transform .15s ease, filter .15s ease;
+  }
+  .tx-add-btn:hover{ filter: brightness(1.08); transform: translateY(-1px); }
+  .tx-add-btn .plus{ width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.28); display:grid; place-items:center; font-size: 16px; line-height: 1; }
+  .tx-search{
+    position: relative; margin-bottom: 14px;
+  }
+  .tx-search input{
+    width: 100%; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 13px 16px 13px 42px; color: var(--ink); font-family: inherit; font-size: 14px;
+  }
+  .tx-search input:focus{ outline: none; border-color: var(--savings); }
+  .tx-search svg{ position:absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; stroke: var(--ink-faint); fill: none; stroke-width: 2; stroke-linecap: round; }
+  .tx-pills{ display:flex; gap: 8px; margin-bottom: 22px; }
+  .tx-pill{
+    flex: 1; background: var(--surface); border: 1px solid var(--line); color: var(--ink-dim);
+    border-radius: 22px; padding: 10px 0; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: background .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .tx-pill.active{ background: var(--savings); border-color: var(--savings); color: var(--bg); }
+  .txf-day{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin: 20px 2px 10px; }
+  .txf-day:first-child{ margin-top: 0; }
+  .txf-row{
+    --flow-color: var(--ink-faint);
+    display:flex; align-items:center; gap: 14px; padding: 12px 14px 12px 12px; margin-bottom: 8px;
+    border-left: 2px solid var(--flow-color); border-radius: 3px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--flow-color) 10%, transparent), transparent 75%);
+    animation: txfIn .45s cubic-bezier(.22,.68,0,1.01) both;
+  }
+  @keyframes txfIn{ from{ opacity: 0; transform: translateY(8px); } to{ opacity: 1; transform: none; } }
+  .txf-row.t-income{ --flow-color: var(--flow-income); }
+  .txf-row.t-expense{ --flow-color: var(--flow-expense); }
+  .txf-row.t-savings{ --flow-color: var(--flow-savings); }
+  .txf-row.t-debt{ --flow-color: var(--debt); }
+  .txf-icon{
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display:grid; place-items:center;
+    background: color-mix(in srgb, var(--flow-color) 20%, transparent); color: var(--flow-color); font-size: 19px; font-weight: 700;
+  }
+  .txf-main{ flex: 1; min-width: 0; }
+  .txf-title{ color: var(--ink); font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txf-sub{ color: var(--ink-faint); font-size: 12px; margin-top: 2px; }
+  .txf-right{ text-align: right; display:flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .txf-amt{ color: var(--flow-color); font-weight: 600; font-size: 14.5px; }
+  .txf-conv{ color: var(--ink-faint); font-size: 11px; }
+  .txf-actions{ display:flex; gap: 10px; }
+  .txf-actions button{ background:none; border:none; padding:0; cursor:pointer; font-size: 11px; color: var(--ink-faint); font-family: inherit; }
+  .txf-actions button:hover{ color: var(--expense); }
+  .txf-actions .tx-confirm{ color: var(--income); }
+  .txf-tag{ font-size: 10.5px; color: var(--savings); border: 1px solid var(--savings); border-radius: 10px; padding: 1px 7px; margin-left: 8px; }
+  .txf-empty{ text-align:center; color: var(--ink-faint); padding: 40px 10px; font-size: 13.5px; }
+  .txf-section-gap{ height: 10px; }
+
+  /* floating plus */
+  .tx-fab{
+    position: fixed; right: 22px; bottom: 78px; width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--savings); color: var(--bg); font-size: 30px; line-height: 1; z-index: 40; display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35); transition: transform .2s ease;
+  }
+  .tx-fab:hover{ transform: scale(1.07) rotate(90deg); }
+  body.on-transactions .tx-fab{ display:block; }
+
+  /* add-transaction sheet */
+  .sheet-backdrop{
+    position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 60; display:flex; align-items:flex-end; justify-content:center;
+    opacity: 0; pointer-events: none; transition: opacity .25s ease;
+  }
+  .sheet-backdrop.open{ opacity: 1; pointer-events: auto; }
+  .sheet{
+    width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; background: var(--surface); border-radius: 22px 22px 0 0;
+    padding: 12px 22px 28px; transform: translateY(100%); transition: transform .35s cubic-bezier(.22,.68,0,1.01);
+    border-top: 1px solid var(--line);
+  }
+  .sheet-backdrop.open .sheet{ transform: none; }
+  .sheet-grab{ width: 42px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 14px; }
+  .sheet-head{ display:flex; align-items:center; justify-content: space-between; margin-bottom: 4px; }
+  .sheet-head h2{ margin: 0; }
+  .sheet-close{ background:none; border:none; color: var(--ink-faint); font-size: 22px; cursor:pointer; }
+  .sheet-sub{ color: var(--ink-faint); font-size: 12.5px; margin: 0 0 16px; }
+  .type-seg{ display:flex; gap: 6px; margin-bottom: 16px; }
+  .type-seg button{
+    flex:1; border: 1px solid var(--line); background: var(--bg); color: var(--ink-dim); border-radius: 10px; padding: 10px 4px;
+    font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all .2s ease;
+  }
+  .type-seg button.active{ color: var(--bg); border-color: transparent; background: var(--seg-color); font-weight: 600; }
+  .type-seg button[data-type="income"]{ --seg-color: var(--flow-income); }
+  .type-seg button[data-type="expense"]{ --seg-color: var(--flow-expense); }
+  .type-seg button[data-type="savings"]{ --seg-color: var(--flow-savings); }
+  .type-seg button[data-type="debt"]{ --seg-color: var(--debt); }
+  body.on-transactions main.page-container{ padding-bottom: 120px; }
+  #txType{ display:none; }
+  label[for="txType"]{ display:none; }
 </style>
 </head>
 <body>
@@ -779,60 +879,24 @@
 
   <!-- ================= TRANSACTIONS & BUDGET ================= -->
   <section id="page-transactions" class="page">
-    <h1 class="page-title">Transactions &amp; Budget</h1>
-
-    <div class="panel">
-      <h2>Add a Transaction</h2>
-      <p class="form-msg" id="txLockNote" style="display:none; color: var(--ink-dim); margin-bottom: 14px;"></p>
-      <form id="txForm">
-        <div class="form-row">
-          <div>
-            <label for="txType">Type</label>
-            <select id="txType" required>
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
-              <option value="savings">Savings / Investment</option>
-              <option value="debt">Debt Payment</option>
-            </select>
-          </div>
-          <div>
-            <label for="txCategory">Category</label>
-            <select id="txCategory" required></select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div>
-            <label for="txAmount">Amount</label>
-            <input type="number" id="txAmount" min="0" step="0.01" placeholder="0.00" required>
-          </div>
-          <div>
-            <label for="txCurrency">Currency</label>
-            <select id="txCurrency" required></select>
-          </div>
-          <div>
-            <label for="txDate">Date</label>
-            <input type="date" id="txDate" required>
-          </div>
-        </div>
-        <div class="checkbox-row" id="fixedRow">
-          <input type="checkbox" id="txFixed">
-          <label for="txFixed">This is a fixed / recurring cost</label>
-        </div>
-        <div class="form-row">
-          <div>
-            <label for="txDesc">Description (optional)</label>
-            <input type="text" id="txDesc" placeholder="e.g. Rent, YouTube ad revenue…">
-          </div>
-        </div>
-        <button type="submit" class="submit-btn">Add transaction</button>
-        <p class="form-msg" id="formMsg"></p>
-      </form>
+    <div class="tx-page-head">
+      <h1 class="page-title">Transactions</h1>
+      <button type="button" class="tx-add-btn" id="txAddBtn"><span class="plus">+</span>Add</button>
     </div>
 
-    <div class="panel">
-      <p class="section-label">Recent Transactions</p>
-      <div id="txListBody"></div>
+    <div class="tx-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="text" id="txSearch" placeholder="Search transactions" autocomplete="off">
     </div>
+    <div class="tx-pills" id="txPills">
+      <button type="button" class="tx-pill active" data-filter="all">All</button>
+      <button type="button" class="tx-pill" data-filter="income">Income</button>
+      <button type="button" class="tx-pill" data-filter="expense">Expenses</button>
+    </div>
+    <div id="txListBody"></div>
+    <div class="txf-section-gap"></div>
+
+    <p class="section-label" style="margin: 30px 0 14px;">Budget</p>
 
     <div class="panel">
       <h2>Set Budget for This Period</h2>
@@ -1133,6 +1197,63 @@
 </main>
 
 <!-- Bottom nav -->
+<button type="button" class="tx-fab" id="txFab" aria-label="Add transaction">+</button>
+
+<div class="sheet-backdrop" id="txSheet">
+  <div class="sheet" role="dialog" aria-label="Add a transaction">
+    <div class="sheet-grab"></div>
+    <div class="sheet-head"><h2>Add a Transaction</h2><button type="button" class="sheet-close" id="txSheetClose" aria-label="Close">×</button></div>
+    <p class="sheet-sub">Bank sync is on the way — for now, add anything manually.</p>
+    <p class="form-msg" id="txLockNote" style="display:none; color: var(--ink-dim); margin-bottom: 14px;"></p>
+    <div class="type-seg" id="typeSeg">
+      <button type="button" data-type="expense" class="active">Expense</button>
+      <button type="button" data-type="income">Income</button>
+      <button type="button" data-type="savings">Savings</button>
+      <button type="button" data-type="debt">Debt</button>
+    </div>
+    <form id="txForm">
+      <select id="txType" required>
+        <option value="income">Income</option>
+        <option value="expense" selected>Expense</option>
+        <option value="savings">Savings / Investment</option>
+        <option value="debt">Debt Payment</option>
+      </select>
+      <div class="form-row">
+        <div>
+          <label for="txAmount">Amount</label>
+          <input type="number" id="txAmount" min="0" step="0.01" placeholder="0.00" required>
+        </div>
+        <div>
+          <label for="txCurrency">Currency</label>
+          <select id="txCurrency" required></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="txCategory">Category</label>
+          <select id="txCategory" required></select>
+        </div>
+        <div>
+          <label for="txDate">Date</label>
+          <input type="date" id="txDate" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label for="txDesc">Description (optional)</label>
+          <input type="text" id="txDesc" placeholder="e.g. Rent, YouTube ad revenue…">
+        </div>
+      </div>
+      <div class="checkbox-row" id="fixedRow">
+        <input type="checkbox" id="txFixed">
+        <label for="txFixed">This is a fixed / recurring cost</label>
+      </div>
+      <button type="submit" class="submit-btn">Add transaction</button>
+      <p class="form-msg" id="formMsg"></p>
+    </form>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <button class="nav-item active" data-page="dashboard">Dashboard</button>
   <button class="nav-item" data-page="transactions">Transactions</button>
@@ -1279,7 +1400,8 @@
     return amount / rate;
   }
   function rateRelativeToBase(curr) { return curr === baseCurrency ? 1 : (exchangeRates[curr] || null); }
-  function todayISO() { return new Date().toISOString().slice(0, 10); }
+  function localISO(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+  function todayISO() { return localISO(new Date()); }
 
   const animatedValues = {};
   function animateNumber(elId, target, duration = 800) {
@@ -1310,6 +1432,7 @@
       document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.page === pageId));
     }
     window.scrollTo(0, 0);
+    document.body.classList.toggle("on-transactions", pageId === "transactions");
     if (pageId === "dashboard" && lastPeriod) renderExpenseBreakdown(lastActualTx);
     if (pageId === "analytics") renderAnalyticsCharts();
     if (pageId === "goals") { loadHoldings(); updateGrowthCalculator(); }
@@ -1605,10 +1728,10 @@
   async function computeInsights() {
     const insights = [];
     const today = new Date();
-    const iso = (d) => d.toISOString().slice(0, 10);
+    const iso = (d) => localISO(d);
     const daysAgo = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return d; };
     const cssVar = (name) => getComputedStyle(document.body).getPropertyValue(name).trim();
-    const COLOR_UP = cssVar("--insight-pos"), COLOR_DOWN = cssVar("--insight-neg"), COLOR_GOAL = cssVar("--insight-pos"), COLOR_NEUTRAL = cssVar("--insight-neutral");
+    const C_INC = cssVar("--flow-income"), C_EXP = cssVar("--flow-expense"), C_SAV = cssVar("--flow-savings"), C_DEBT = cssVar("--debt"), COLOR_NEUTRAL = cssVar("--insight-neutral");
 
     const { data: last60, error } = await supabaseClient
       .from("transactions").select("type, category, amount, currency, transaction_date")
@@ -1627,7 +1750,7 @@
     if (incomePrior30 > 0) {
       const pct = ((incomeLast30 - incomePrior30) / incomePrior30) * 100;
       if (Math.abs(pct) >= 3) {
-        insights.push({ color: pct >= 0 ? COLOR_UP : COLOR_DOWN, text: `Your income is ${Math.abs(pct).toFixed(0)}% ${pct >= 0 ? "higher" : "lower"} than the previous 30 days.` });
+        insights.push({ color: C_INC, text: `Your income is ${Math.abs(pct).toFixed(0)}% ${pct >= 0 ? "higher" : "lower"} than the previous 30 days.` });
       }
     }
 
@@ -1645,7 +1768,7 @@
       if (prior7Amt > 0) {
         const pct = ((last7Amt - prior7Amt) / prior7Amt) * 100;
         if (Math.abs(pct) >= 5) {
-          insights.push({ color: pct <= 0 ? COLOR_UP : COLOR_DOWN, text: `Your spending on ${cat} is ${Math.abs(pct).toFixed(0)}% ${pct <= 0 ? "lower" : "higher"} than last week.` });
+          insights.push({ color: C_EXP, text: `Your spending on ${cat} is ${Math.abs(pct).toFixed(0)}% ${pct <= 0 ? "lower" : "higher"} than last week.` });
         }
       }
     }
@@ -1662,10 +1785,10 @@
           const daysNeeded = Math.ceil(remaining / dailyPace);
           const months = Math.floor(daysNeeded / 30);
           const days = daysNeeded % 30;
-          insights.push({ color: COLOR_GOAL, text: `At your current pace, you're about ${months > 0 ? months + "mo " : ""}${days}d from hitting this month's savings goal.` });
+          insights.push({ color: C_SAV, text: `At your current pace, you're about ${months > 0 ? months + "mo " : ""}${days}d from hitting this month's savings goal.` });
         }
       } else {
-        insights.push({ color: COLOR_UP, text: `You've already hit your savings target for this period — nice work.` });
+        insights.push({ color: C_SAV, text: `You've already hit your savings target for this period — nice work.` });
       }
     }
 
@@ -1681,7 +1804,7 @@
 
       const incomeSoFar = sumIn(thisMonthTx, t => t.type === "income");
       if (incomeSoFar > 0 && insights.length < 3) {
-        insights.push({ color: COLOR_UP, text: `You've earned ${fmt(incomeSoFar)} so far this month.` });
+        insights.push({ color: C_INC, text: `You've earned ${fmt(incomeSoFar)} so far this month.` });
       }
 
       const expenseTotals = {};
@@ -1690,12 +1813,24 @@
       });
       const topExpense = Object.entries(expenseTotals).sort((a, b) => b[1] - a[1])[0];
       if (topExpense && insights.length < 3) {
-        insights.push({ color: COLOR_NEUTRAL, text: `${topExpense[0]} is your biggest expense category this month at ${fmt(topExpense[1])}.` });
+        insights.push({ color: C_EXP, text: `${topExpense[0]} is your biggest expense category this month at ${fmt(topExpense[1])}.` });
       }
 
       if (last60.length === 0 && insights.length === 0) {
         insights.push({ color: COLOR_NEUTRAL, text: `Add your first transaction to start seeing personalized insights here.` });
       }
+    }
+
+    // Month-to-date facts, one per money type, so the rotating line shows every color
+    {
+      const mStart = iso(new Date(today.getFullYear(), today.getMonth(), 1));
+      const mTx = last60.filter(t => t.transaction_date >= mStart);
+      const spent = sumIn(mTx, t => t.type === "expense");
+      const saved = sumIn(mTx, t => t.type === "savings");
+      const debtPaid = sumIn(mTx, t => t.type === "debt");
+      if (spent > 0) insights.push({ color: C_EXP, text: `You've spent ${fmt(spent)} so far this month.` });
+      if (saved > 0) insights.push({ color: C_SAV, text: `You've put ${fmt(saved)} into savings this month.` });
+      if (debtPaid > 0) insights.push({ color: C_DEBT, text: `You've paid ${fmt(debtPaid)} toward debt this month.` });
     }
 
     // Kitty Mode extras — tied to a specific media cue
@@ -1709,25 +1844,25 @@
         .map(t => ({ ...t, baseAmt: toBase(Number(t.amount), t.currency || "USD") }))
         .sort((a, b) => b.baseAmt - a.baseAmt)[0];
       if (bigExpense && bigExpense.baseAmt > 500) {
-        kittyExtras.push({ color: COLOR_DOWN, text: `Your ${bigExpense.category} expense of ${fmt(bigExpense.baseAmt)} was over $500 this month.`, media: "bigExpense" });
+        kittyExtras.push({ color: C_EXP, text: `Your ${bigExpense.category} expense of ${fmt(bigExpense.baseAmt)} was over $500 this month.`, media: "bigExpense" });
       }
 
       const hasLoan = thisMonthTx2.some(t => t.type === "debt");
       if (hasLoan) {
         const loanTotal = sumIn(thisMonthTx2, t => t.type === "debt");
-        kittyExtras.push({ color: COLOR_NEUTRAL, text: `You've made ${fmt(loanTotal)} in debt payments this month.`, media: "loan" });
+        kittyExtras.push({ color: C_DEBT, text: `You've made ${fmt(loanTotal)} in debt payments this month.`, media: "loan" });
       }
 
       const incomeThisMonth = sumIn(thisMonthTx2, t => t.type === "income");
       if (incomeThisMonth > 0) {
-        kittyExtras.push({ color: COLOR_UP, text: `You've brought in ${fmt(incomeThisMonth)} this month — nice!`, media: "income" });
+        kittyExtras.push({ color: C_INC, text: `You've brought in ${fmt(incomeThisMonth)} this month — nice!`, media: "income" });
       }
 
       insights.unshift(...kittyExtras);
       return insights.slice(0, 5);
     }
 
-    return insights.slice(0, 3);
+    return insights.slice(0, 5);
   }
 
   function populateHoldingCurrency() {
@@ -1828,7 +1963,7 @@
     holdingsChart = new Chart(ctx, {
       type: "doughnut",
       data: { labels: converted.map(h => h.name), datasets: [{ data: converted.map(h => Number(h.amount.toFixed(2))), backgroundColor: converted.map(h => h.color), borderColor: "var(--surface)", borderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+      options: { responsive: true, maintainAspectRatio: false, resizeDelay: 1300, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
     });
 
     holdings.forEach(h => {
@@ -2396,7 +2531,7 @@
     const [year, month] = periodValue.split("-").map(Number);
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0);
-    const toISO = (d) => d.toISOString().slice(0, 10);
+    const toISO = (d) => localISO(d);
     return { start: toISO(start), end: toISO(end) };
   }
   function prevPeriod(periodValue) {
@@ -2733,7 +2868,7 @@
     donutChart = new Chart(donutCanvas.getContext("2d"), {
       type: "doughnut",
       data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "var(--surface)", borderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+      options: { responsive: true, maintainAspectRatio: false, resizeDelay: 1300, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
     });
   }
 
@@ -2761,7 +2896,7 @@
     donutChart2 = new Chart(donutCanvas2.getContext("2d"), {
       type: "doughnut",
       data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: "var(--surface)", borderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
+      options: { responsive: true, maintainAspectRatio: false, resizeDelay: 1300, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
     });
 
     if (barChart) barChart.destroy();
@@ -2915,7 +3050,7 @@
     }));
     document.getElementById("comparisonNote").textContent = anyBudgetSet ? "" : "No budget set for this period yet — set one in Transactions & Budget to see variance here.";
 
-    renderTxList(current.slice(0, 12));
+    renderTxList(current);
     renderFixedExpenseList(actualTx);
     lastPeriod = period;
     lastActualTx = actualTx;
@@ -2936,42 +3071,64 @@
     renderAnalyticsExpenseCharts(lastActualTx);
   }
 
+  let txFeedAll = [];
+  let txFeedFilter = "all";
+  let txFeedQuery = "";
+  const TX_GLYPH = { income: "+", expense: "−", savings: "↗", debt: "↧" };
+
   function renderTxList(transactions) {
+    if (transactions) txFeedAll = transactions;
     const container = document.getElementById("txListBody");
     container.innerHTML = "";
-    if (transactions.length === 0) {
-      container.innerHTML = '<p class="empty-state">No transactions yet for this period — add your first one above.</p>';
+    const q = txFeedQuery.trim().toLowerCase();
+    let list = txFeedAll.filter(t => {
+      if (txFeedFilter === "income" && t.type !== "income") return false;
+      if (txFeedFilter === "expense" && t.type === "income") return false;
+      if (!q) return true;
+      return `${t.category} ${t.description || ""} ${t.type} ${t.amount}`.toLowerCase().includes(q);
+    });
+    if (list.length === 0) {
+      container.innerHTML = `<div class="txf-empty">${txFeedAll.length === 0 ? "No transactions yet for this period — tap + to add your first one." : "Nothing matches that search."}</div>`;
       return;
     }
-    transactions.forEach(t => {
-      const row = document.createElement("div");
-      row.className = "tx-row";
+    const today = todayISO();
+    const yest = localISO(new Date(Date.now() - 86400000));
+    const dayLabel = (iso) => {
+      if (iso === today) return "Today";
+      if (iso === yest) return "Yesterday";
+      const [y, m, d] = iso.split("-").map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+    };
+    let lastDay = null, delay = 0;
+    list.forEach(t => {
+      if (t.transaction_date !== lastDay) {
+        lastDay = t.transaction_date;
+        const h = document.createElement("div");
+        h.className = "txf-day"; h.textContent = dayLabel(lastDay);
+        container.appendChild(h);
+      }
       const isPlanned = t.status === "planned";
       const sign = t.type === "income" ? "+" : "-";
-      const color = t.type === "income" ? "var(--income)" : t.type === "savings" ? "var(--savings)" : t.type === "debt" ? "var(--debt)" : "var(--expense)";
       const currency = t.currency || "USD";
-      const originalAmt = fmtOriginal(Math.abs(t.amount), currency);
-      const convertedAmt = currency !== baseCurrency ? ` <span style="color: var(--ink-faint); font-size: 12px;">(≈ ${fmt(Math.abs(toBase(Number(t.amount), currency)))})</span>` : "";
-      const plannedTag = isPlanned ? ` <span style="color: var(--savings); font-size: 11px; border: 1px solid var(--savings); border-radius: 3px; padding: 1px 6px; margin-left: 6px;">Planned</span>` : "";
-      const confirmBtn = isPlanned ? `<button class="tx-del tx-confirm" data-id="${t.id}" style="color: var(--income);">Confirm</button>` : "";
+      const conv = currency !== baseCurrency ? `<span class="txf-conv">≈ ${fmt(Math.abs(toBase(Number(t.amount), currency)))}</span>` : "";
+      const row = document.createElement("div");
+      row.className = `txf-row t-${t.type}`;
+      row.style.animationDelay = Math.min(delay, 12) * 25 + "ms"; delay++;
+      if (isPlanned) row.style.opacity = "0.78";
       row.innerHTML = `
-        <div class="tx-left" style="${isPlanned ? "opacity: 0.75;" : ""}">
-          <span class="tx-dot ${t.type}"></span>
-          <div>
-            <span class="tx-cat">${t.category}</span>
-            <span class="tx-date">${t.transaction_date}</span>
-            ${plannedTag}
-            ${t.description ? `<div class="tx-desc">${escapeHtml(t.description)}</div>` : ""}
-          </div>
+        <div class="txf-icon">${TX_GLYPH[t.type] || "•"}</div>
+        <div class="txf-main">
+          <div class="txf-title">${escapeHtml(t.description || t.category)}</div>
+          <div class="txf-sub">${t.category}${t.is_fixed ? " · Fixed" : ""}${isPlanned ? '<span class="txf-tag">Planned</span>' : ""}</div>
         </div>
-        <div style="display:flex; align-items:center;">
-          <span class="tx-amt num" style="color:${color}; ${isPlanned ? "opacity: 0.75;" : ""}">${sign}${originalAmt}${convertedAmt}</span>
-          ${confirmBtn}
-          <button class="tx-del" data-id="${t.id}">Delete</button>
+        <div class="txf-right">
+          <span class="txf-amt num">${sign}${fmtOriginal(Math.abs(t.amount), currency)}</span>
+          ${conv}
+          <span class="txf-actions">${isPlanned ? `<button class="tx-confirm" data-id="${t.id}">Confirm</button>` : ""}<button class="tx-del" data-id="${t.id}">Delete</button></span>
         </div>`;
       container.appendChild(row);
     });
-    container.querySelectorAll(".tx-del:not(.tx-confirm)").forEach(btn => {
+    container.querySelectorAll(".tx-del").forEach(btn => {
       btn.addEventListener("click", async () => {
         await supabaseClient.from("transactions").delete().eq("id", btn.getAttribute("data-id"));
         loadDashboard();
@@ -2986,6 +3143,40 @@
       });
     });
   }
+
+  // ----- Add-transaction sheet, search, filters, plus buttons -----
+  function openTxSheet() {
+    document.getElementById("txSheet").classList.add("open");
+    document.getElementById("formMsg").textContent = "";
+    setTimeout(() => document.getElementById("txAmount").focus(), 350);
+  }
+  function closeTxSheet() { document.getElementById("txSheet").classList.remove("open"); }
+  function syncTypeSeg() {
+    const t = document.getElementById("txType").value;
+    document.querySelectorAll("#typeSeg button").forEach(b => b.classList.toggle("active", b.dataset.type === t));
+  }
+  document.getElementById("txAddBtn").addEventListener("click", openTxSheet);
+  document.getElementById("txFab").addEventListener("click", openTxSheet);
+  document.getElementById("txSheetClose").addEventListener("click", closeTxSheet);
+  document.getElementById("txSheet").addEventListener("click", (e) => { if (e.target.id === "txSheet") closeTxSheet(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTxSheet(); });
+  document.querySelectorAll("#typeSeg button").forEach(b => {
+    b.addEventListener("click", () => {
+      const sel = document.getElementById("txType");
+      sel.value = b.dataset.type;
+      sel.dispatchEvent(new Event("change"));
+      syncTypeSeg();
+    });
+  });
+  document.getElementById("txSearch").addEventListener("input", (e) => { txFeedQuery = e.target.value; renderTxList(); });
+  document.querySelectorAll("#txPills .tx-pill").forEach(p => {
+    p.addEventListener("click", () => {
+      document.querySelectorAll("#txPills .tx-pill").forEach(x => x.classList.remove("active"));
+      p.classList.add("active");
+      txFeedFilter = p.dataset.filter;
+      renderTxList();
+    });
+  });
 
   function escapeHtml(str) {
     const div = document.createElement("div");
@@ -3019,6 +3210,7 @@
 
     msg.className = "form-msg ok";
     msg.textContent = txStatus === "planned" ? "Planned transaction added." : "Transaction added.";
+    setTimeout(closeTxSheet, 650);
     document.getElementById("txAmount").value = "";
     document.getElementById("txDesc").value = "";
     document.getElementById("txFixed").checked = false;
