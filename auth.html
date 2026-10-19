@@ -195,8 +195,15 @@
 
     try {
       if (mode === "signup") {
-        const { error } = await supabaseClient.auth.signUp({ email, password });
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
         if (error) throw error;
+        if (!data.session) {
+          // No session: email confirmation is required, or this email is already registered
+          msg.className = "msg error";
+          msg.textContent = "Almost there — check your inbox to confirm your email, then sign in. (If you already have an account with this email, use Sign in instead.)";
+          submitBtn.disabled = false;
+          return;
+        }
         msg.className = "msg ok";
         msg.textContent = "Account created — you're signed in. Redirecting…";
       } else {
