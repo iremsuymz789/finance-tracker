@@ -1416,7 +1416,14 @@
   async function init() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = "auth.html"; return; }
-    currentUser = session.user;
+    // Confirm with the server that this login still exists (a cached session can point at a deleted/old account)
+    const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
+    if (userErr || !userData || !userData.user) {
+      await supabaseClient.auth.signOut();
+      window.location.href = "auth.html";
+      return;
+    }
+    currentUser = userData.user;
 
     buildPeriodOptions();
     populateCategoryOptions();
@@ -1495,7 +1502,16 @@
       user_id: currentUser.id, opening_balance: openingBalance, base_currency: baseCurrency,
       full_name: name, occupation, primary_goal: goal
     });
-    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
+    if (error) {
+      msg.className = "form-msg error";
+      if (error.code === "23503") {
+        msg.textContent = "Your login session looks out of date. Signing you out — please sign in again.";
+        setTimeout(async () => { await supabaseClient.auth.signOut(); window.location.href = "auth.html"; }, 1800);
+      } else {
+        msg.textContent = error.message;
+      }
+      return;
+    }
 
     userName = name;
     document.getElementById("onboardingOverlay").style.display = "none";
