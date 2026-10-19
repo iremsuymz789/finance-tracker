@@ -769,6 +769,51 @@
   body.on-transactions main.page-container{ padding-bottom: 120px; }
   #txType{ display:none; }
   label[for="txType"]{ display:none; }
+
+  /* ---------- Segmented tabs + Budget view ---------- */
+  .seg-tabs{ display:flex; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px; margin-bottom: 20px; }
+  .seg-tab{ flex:1; border:none; background:none; color: var(--ink-dim); font-family: inherit; font-size: 13.5px; font-weight: 500; padding: 10px 0; border-radius: 10px; cursor:pointer; transition: background .25s ease, color .25s ease; }
+  .seg-tab.active{ background: var(--savings); color: var(--bg); font-weight: 600; }
+  #page-transactions .tab-budget{ display:none; }
+  #page-transactions[data-tab="budget"] .tab-budget{ display:block; }
+  #page-transactions[data-tab="budget"] .tab-tx{ display:none; }
+  #page-transactions[data-tab="budget"] .tx-add-btn{ display:none; }
+  body.budget-tab .tx-fab{ display:none !important; }
+
+  .bud-card{ background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 26px; }
+  .bud-top{ display:flex; justify-content: space-between; align-items:flex-end; gap: 12px; margin-bottom: 14px; }
+  .bud-label{ color: var(--ink-faint); font-size: 12px; margin: 0 0 4px; }
+  .bud-total{ font-family: 'Fraunces', serif; font-size: 32px; font-weight: 500; margin: 0; color: var(--ink); }
+  .bud-spent{ font-size: 15px; font-weight: 600; margin: 0; color: var(--flow-expense); }
+  .bud-track{ height: 9px; border-radius: 6px; background: var(--bg); overflow: hidden; }
+  .bud-fill{ height: 100%; width: 0; border-radius: 6px; background: var(--bar-ok); transition: width 1s cubic-bezier(.22,.68,0,1.01), background .3s ease; }
+  .bud-meta{ display:flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--ink-faint); }
+  .bud-targets{ margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 4px; }
+  .bud-target{ display:flex; align-items:center; justify-content: space-between; gap: 12px; padding: 9px 0 9px 12px; margin-top: 8px; border-left: 2px solid var(--flow-color); border-radius: 3px; background: linear-gradient(90deg, color-mix(in srgb, var(--flow-color) 9%, transparent), transparent 70%); font-size: 13px; }
+  .bud-target .bt-name{ color: var(--ink-dim); }
+  .bud-target .bt-val{ color: var(--flow-color); font-weight: 600; }
+  .bud-target.t-income{ --flow-color: var(--flow-income); }
+  .bud-target.t-savings{ --flow-color: var(--flow-savings); }
+  .bud-target.t-debt{ --flow-color: var(--debt); }
+
+  .bud-section-head{ display:flex; align-items:center; justify-content: space-between; margin-bottom: 14px; }
+  .bud-section-head h2{ margin: 0; font-size: 18px; }
+  .bud-link{ background:none; border:none; color: var(--savings); font-family: inherit; font-size: 13px; cursor:pointer; }
+  .bud-cat{ padding: 14px 0; border-bottom: 1px solid var(--line); animation: txfIn .45s cubic-bezier(.22,.68,0,1.01) both; }
+  .bud-cat-top{ display:flex; justify-content: space-between; align-items:flex-start; }
+  .bud-cat-name{ color: var(--ink); font-size: 14.5px; font-weight: 500; }
+  .bud-cat-budget{ color: var(--ink-faint); font-size: 12px; margin-top: 2px; }
+  .bud-cat-right{ text-align:right; }
+  .bud-cat-spent{ color: var(--ink); font-size: 14.5px; font-weight: 600; }
+  .bud-cat-pct{ font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .bud-cat .bud-track{ height: 6px; margin-top: 10px; }
+  .bud-viewall{ width:100%; display:flex; justify-content: space-between; align-items:center; margin-top: 16px; padding: 15px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 500; cursor:pointer; }
+  .bud-viewall:hover{ border-color: var(--savings); }
+  .bud-edit{ margin-top: 22px; }
+  .bud-edit summary{ cursor:pointer; color: var(--ink-dim); font-size: 13.5px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; list-style: none; }
+  .bud-edit summary::-webkit-details-marker{ display:none; }
+  .bud-edit[open] summary{ margin-bottom: 14px; color: var(--savings); }
+  .bud-empty{ text-align:center; color: var(--ink-faint); font-size: 13.5px; padding: 26px 10px; }
 </style>
 </head>
 <body>
@@ -880,10 +925,15 @@
   <!-- ================= TRANSACTIONS & BUDGET ================= -->
   <section id="page-transactions" class="page">
     <div class="tx-page-head">
-      <h1 class="page-title">Transactions</h1>
+      <h1 class="page-title" id="txPageTitle">Transactions</h1>
       <button type="button" class="tx-add-btn" id="txAddBtn"><span class="plus">+</span>Add</button>
     </div>
+    <div class="seg-tabs" id="txTabs">
+      <button type="button" class="seg-tab active" data-tab="transactions">Transactions</button>
+      <button type="button" class="seg-tab" data-tab="budget">Budget</button>
+    </div>
 
+    <div class="tab-tx">
     <div class="tx-search">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input type="text" id="txSearch" placeholder="Search transactions" autocomplete="off">
@@ -894,10 +944,31 @@
       <button type="button" class="tx-pill" data-filter="expense">Expenses</button>
     </div>
     <div id="txListBody"></div>
-    <div class="txf-section-gap"></div>
+    </div>
 
-    <p class="section-label" style="margin: 30px 0 14px;">Budget</p>
+    <div class="tab-budget">
+    <div class="bud-card">
+      <div class="bud-top">
+        <div>
+          <p class="bud-label">Monthly Budget</p>
+          <p class="bud-total num" id="budTotal">$0.00</p>
+        </div>
+        <div class="bud-spent-box">
+          <p class="bud-label" style="text-align:right;">Spent</p>
+          <p class="bud-spent num" id="budSpent">$0.00</p>
+        </div>
+      </div>
+      <div class="bud-track"><div class="bud-fill" id="budFill"></div></div>
+      <div class="bud-meta"><span id="budLeft"></span><span class="num" id="budPct"></span></div>
+      <div class="bud-targets" id="budTargets"></div>
+    </div>
 
+    <div class="bud-section-head"><h2>Categories</h2><button type="button" class="bud-link" id="budEditBtn">Edit budget</button></div>
+    <div id="budCategoryList"></div>
+    <button type="button" class="bud-viewall" id="budViewAll" style="display:none;"><span>View All Categories</span><span>›</span></button>
+
+    <details class="bud-edit" id="budEdit">
+    <summary>Edit this period's budget</summary>
     <div class="panel">
       <h2>Set Budget for This Period</h2>
       <p class="form-msg" id="budgetLockNote" style="display:none; color: var(--ink-dim); margin-bottom: 14px;"></p>
@@ -917,18 +988,21 @@
         <p class="form-msg" id="budgetMsg"></p>
       </form>
     </div>
+    </details>
 
-    <div class="panel">
+    <div class="panel" style="margin-top:22px;">
       <h2>Fixed Expenses This Period</h2>
       <p class="section-label" style="margin-bottom:6px;">Total</p>
       <p class="value num" id="fixedExpenseTotal" style="font-family:'Fraunces',serif; font-weight:500; font-size:24px; margin-bottom:18px;">$0.00</p>
       <div id="fixedExpenseList"></div>
-      <p style="font-size:11.5px; color: var(--ink-faint); margin-top:14px;">Check "This is a fixed / recurring cost" when adding an expense above and it'll show up here automatically — no separate setup needed.</p>
+      <p style="font-size:11.5px; color: var(--ink-faint); margin-top:14px;">Check "This is a fixed / recurring cost" when adding an expense and it'll show up here automatically — no separate setup needed.</p>
     </div>
+
 
     <div class="panel" style="margin-bottom:0;">
       <h2>Credit Card Management</h2>
       <div class="placeholder-card">Coming soon — track limits, current charges, available credit, due dates, and utilization here.</div>
+    </div>
     </div>
   </section>
 
@@ -3052,6 +3126,8 @@
     document.getElementById("comparisonNote").textContent = anyBudgetSet ? "" : "No budget set for this period yet — set one in Transactions & Budget to see variance here.";
 
     renderTxList(current);
+    lastActualTx = actualTx;
+    renderBudgetOverview();
     renderFixedExpenseList(actualTx);
     lastPeriod = period;
     lastActualTx = actualTx;
@@ -3177,6 +3253,82 @@
       txFeedFilter = p.dataset.filter;
       renderTxList();
     });
+  });
+
+
+  // ---------- Budget overview (Transactions page → Budget tab) ----------
+  let budShowAll = false;
+  function setTxTab(tab) {
+    const page = document.getElementById("page-transactions");
+    page.dataset.tab = tab;
+    document.querySelectorAll("#txTabs .seg-tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+    document.getElementById("txPageTitle").textContent = tab === "budget" ? "Budget" : "Transactions";
+    document.body.classList.toggle("budget-tab", tab === "budget");
+    if (tab === "budget") renderBudgetOverview();
+  }
+  function renderBudgetOverview() {
+    const tx = lastActualTx || [];
+    const totals = computeExpenseTotals(tx);
+    const budgets = currentBudgets.categories || {};
+    const totalBudget = EXPENSE_CATEGORIES.reduce((a, cat) => a + (budgets[cat] || 0), 0);
+    const spentAll = Object.values(totals).reduce((a, b) => a + b, 0);
+    document.getElementById("budTotal").textContent = fmt(totalBudget);
+    document.getElementById("budSpent").textContent = fmt(spentAll);
+    const ratio = totalBudget > 0 ? (spentAll / totalBudget) * 100 : 0;
+    const colorFor = (r) => r > 100 ? "var(--bar-over)" : r >= 80 ? "var(--bar-warn)" : "var(--bar-ok)";
+    const fill = document.getElementById("budFill");
+    fill.style.background = colorFor(ratio);
+    fill.style.width = "0";
+    requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = Math.min(100, ratio) + "%"; }));
+    document.getElementById("budPct").textContent = totalBudget > 0 ? Math.round(ratio) + "%" : "";
+    document.getElementById("budLeft").textContent = totalBudget > 0
+      ? (spentAll > totalBudget ? `${fmt(spentAll - totalBudget)} over budget` : `${fmt(totalBudget - spentAll)} left to spend`)
+      : "No expense budget set for this period yet";
+
+    // income / savings / debt targets
+    const sums = { income: 0, savings: 0, debt: 0 };
+    tx.forEach(t => { if (sums[t.type] !== undefined) sums[t.type] += toBase(Number(t.amount), t.currency || "USD"); });
+    const rows = [["income", "Income", currentBudgets.income], ["savings", "Savings", currentBudgets.savings], ["debt", "Debt payments", currentBudgets.debt]].filter(r => r[2] > 0);
+    document.getElementById("budTargets").innerHTML = rows.map(([k, label, target]) =>
+      `<div class="bud-target t-${k}"><span class="bt-name">${label}</span><span class="bt-val num">${fmt(sums[k])} <span style="color:var(--ink-faint);font-weight:400;">/ ${fmt(target)}</span></span></div>`).join("");
+
+    // categories
+    const cats = EXPENSE_CATEGORIES
+      .map(cat => ({ cat, budget: budgets[cat] || 0, spent: totals[cat] || 0 }))
+      .filter(r => r.budget > 0 || r.spent > 0)
+      .sort((a, b) => b.spent - a.spent || b.budget - a.budget);
+    const list = document.getElementById("budCategoryList");
+    const viewAll = document.getElementById("budViewAll");
+    if (cats.length === 0) {
+      list.innerHTML = `<div class="bud-empty">No budgets or spending yet — tap “Edit budget” to set your first one.</div>`;
+      viewAll.style.display = "none";
+      return;
+    }
+    const shown = budShowAll ? cats : cats.slice(0, 5);
+    list.innerHTML = shown.map((r, i) => {
+      const pct = r.budget > 0 ? (r.spent / r.budget) * 100 : 0;
+      const col = colorFor(pct);
+      const bar = r.budget > 0
+        ? `<div class="bud-track"><div class="bud-fill" style="background:${col}; width:0;" data-w="${Math.min(100, pct)}"></div></div>` : "";
+      const pctTxt = r.budget > 0 ? `<div class="bud-cat-pct" style="color:${col};">${Math.round(pct)}%</div>` : `<div class="bud-cat-pct" style="color:var(--ink-faint);font-weight:400;">no budget</div>`;
+      return `<div class="bud-cat" style="animation-delay:${i * 40}ms">
+        <div class="bud-cat-top">
+          <div><div class="bud-cat-name">${r.cat}</div><div class="bud-cat-budget">${r.budget > 0 ? fmt(r.budget) : "—"}</div></div>
+          <div class="bud-cat-right"><div class="bud-cat-spent num">${fmt(r.spent)}</div>${pctTxt}</div>
+        </div>${bar}</div>`;
+    }).join("");
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      list.querySelectorAll(".bud-fill[data-w]").forEach(el => { el.style.width = el.dataset.w + "%"; });
+    }));
+    viewAll.style.display = cats.length > 5 ? "flex" : "none";
+    viewAll.firstElementChild.textContent = budShowAll ? "Show fewer" : "View All Categories";
+  }
+  document.querySelectorAll("#txTabs .seg-tab").forEach(b => b.addEventListener("click", () => setTxTab(b.dataset.tab)));
+  document.getElementById("budViewAll").addEventListener("click", () => { budShowAll = !budShowAll; renderBudgetOverview(); });
+  document.getElementById("budEditBtn").addEventListener("click", () => {
+    const d = document.getElementById("budEdit");
+    d.open = true;
+    d.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   function escapeHtml(str) {
