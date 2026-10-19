@@ -814,6 +814,37 @@
   .bud-edit summary::-webkit-details-marker{ display:none; }
   .bud-edit[open] summary{ margin-bottom: 14px; color: var(--savings); }
   .bud-empty{ text-align:center; color: var(--ink-faint); font-size: 13.5px; padding: 26px 10px; }
+
+  /* ---------- Savings goals ---------- */
+  .goals-head{ display:flex; align-items:center; justify-content: space-between; margin-bottom: 16px; }
+  .goals-head h2{ margin:0; font-size: 20px; }
+  .goal-card{ background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 14px; animation: txfIn .45s cubic-bezier(.22,.68,0,1.01) both; }
+  .goal-top{ display:flex; align-items:center; justify-content: space-between; gap: 14px; }
+  .goal-name{ color: var(--ink); font-size: 15px; font-weight: 600; }
+  .goal-target{ font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; color: var(--ink); margin-top: 2px; }
+  .goal-pic{ width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0; display:grid; place-items:center; font-size: 30px; background: color-mix(in srgb, var(--flow-savings) 18%, var(--bg)); background-size: cover; background-position: center; border: 2px solid var(--line); }
+  .goal-bar-row{ display:flex; justify-content: space-between; align-items: baseline; margin: 16px 0 7px; font-size: 12.5px; }
+  .goal-bar-row .gb-amt{ color: var(--ink-dim); }
+  .goal-bar-row .gb-pct{ font-weight: 600; color: var(--flow-savings); }
+  .goal-track{ height: 7px; border-radius: 5px; background: var(--bg); overflow: hidden; }
+  .goal-fill{ height: 100%; width: 0; border-radius: 5px; background: var(--flow-savings); transition: width 1s cubic-bezier(.22,.68,0,1.01); }
+  .goal-card.done .goal-fill{ background: var(--flow-income); }
+  .goal-card.done .gb-pct{ color: var(--flow-income); }
+  .goal-foot{ display:flex; justify-content: space-between; align-items:center; margin-top: 12px; gap: 10px; }
+  .goal-hint{ color: var(--ink-faint); font-size: 11.5px; }
+  .goal-btns{ display:flex; gap: 8px; flex-shrink: 0; }
+  .goal-btns button{ background: none; border: 1px solid var(--line); color: var(--ink-dim); font-family: inherit; font-size: 12px; border-radius: 14px; padding: 6px 12px; cursor:pointer; }
+  .goal-btns button.primary{ border-color: var(--flow-savings); color: var(--flow-savings); }
+  .goal-btns button:hover{ border-color: var(--savings); color: var(--savings); }
+  .goal-pic-row{ display:flex; align-items:center; gap: 16px; margin-bottom: 12px; }
+  .goal-pic-row .goal-pic{ width: 78px; height: 78px; font-size: 38px; }
+  .goal-pic-actions{ display:flex; flex-direction: column; gap: 8px; }
+  .goal-pic-btn{ background: var(--savings); color: var(--bg); border: none; border-radius: 18px; padding: 9px 16px; font-family: inherit; font-size: 13px; font-weight: 600; cursor:pointer; }
+  .goal-pic-btn.ghost{ background: none; color: var(--ink-dim); border: 1px solid var(--line); font-weight: 500; }
+  .emoji-row{ display:flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .emoji-row button{ width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-size: 20px; cursor:pointer; }
+  .emoji-row button.sel{ border-color: var(--savings); background: color-mix(in srgb, var(--savings) 18%, var(--bg)); }
+  .goal-delete{ width:100%; margin-top: 10px; background:none; border: 1px solid var(--line); color: var(--flow-expense); border-radius: 10px; padding: 11px; font-family: inherit; font-size: 13px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -1017,9 +1048,11 @@
     </div>
 
     <div class="goal-pane active" id="goal-savings">
-      <div class="panel" style="margin-bottom:0;">
-        <div class="placeholder-card">Coming soon — set targets like an emergency fund, travel fund, or a specific purchase, and track progress with visual bars.</div>
+      <div class="goals-head">
+        <h2>My Goals</h2>
+        <button type="button" class="bud-link" id="goalAddBtn">+ Add Goal</button>
       </div>
+      <div id="goalList"></div>
     </div>
 
     <div class="goal-pane" id="goal-investments">
@@ -1328,6 +1361,55 @@
   </div>
 </div>
 
+<div class="sheet-backdrop" id="goalSheet">
+  <div class="sheet" role="dialog" aria-label="Savings goal">
+    <div class="sheet-grab"></div>
+    <div class="sheet-head"><h2 id="goalSheetTitle">New Goal</h2><button type="button" class="sheet-close" id="goalSheetClose" aria-label="Close">×</button></div>
+    <p class="sheet-sub">Pick a picture that makes you want to reach it.</p>
+    <div class="goal-pic-row">
+      <div class="goal-pic" id="goalPicPreview">🎯</div>
+      <div class="goal-pic-actions">
+        <button type="button" class="goal-pic-btn" id="goalPicUpload">Upload a photo</button>
+        <button type="button" class="goal-pic-btn ghost" id="goalPicRemove">Use emoji instead</button>
+        <input type="file" id="goalPicFile" accept="image/*" style="display:none;">
+      </div>
+    </div>
+    <div class="emoji-row" id="goalEmojiRow"></div>
+    <form id="goalForm">
+      <div class="form-row"><div>
+        <label for="goalName">Goal name</label>
+        <input type="text" id="goalName" placeholder="e.g. New Car, Vacation, Emergency Fund" required>
+      </div></div>
+      <div class="form-row">
+        <div><label for="goalTarget">Target amount</label><input type="number" id="goalTarget" min="1" step="0.01" placeholder="0.00" required></div>
+        <div><label for="goalCurrency">Currency</label><select id="goalCurrency"></select></div>
+      </div>
+      <div class="form-row">
+        <div><label for="goalSaved">Already saved</label><input type="number" id="goalSaved" min="0" step="0.01" placeholder="0.00"></div>
+        <div><label for="goalDate">Target date (optional)</label><input type="date" id="goalDate"></div>
+      </div>
+      <button type="submit" class="submit-btn">Save goal</button>
+      <button type="button" class="goal-delete" id="goalDeleteBtn" style="display:none;">Delete this goal</button>
+      <p class="form-msg" id="goalMsg"></p>
+    </form>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="fundsSheet">
+  <div class="sheet" role="dialog" aria-label="Add funds">
+    <div class="sheet-grab"></div>
+    <div class="sheet-head"><h2 id="fundsTitle">Add funds</h2><button type="button" class="sheet-close" id="fundsClose" aria-label="Close">×</button></div>
+    <p class="sheet-sub" id="fundsSub"></p>
+    <form id="fundsForm">
+      <div class="form-row"><div>
+        <label for="fundsAmount">Amount (use a minus to take money out)</label>
+        <input type="number" id="fundsAmount" step="0.01" placeholder="0.00" required>
+      </div></div>
+      <button type="submit" class="submit-btn">Update progress</button>
+    </form>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <button class="nav-item active" data-page="dashboard">Dashboard</button>
   <button class="nav-item" data-page="transactions">Transactions</button>
@@ -1509,7 +1591,7 @@
     document.body.classList.toggle("on-transactions", pageId === "transactions");
     if (pageId === "dashboard" && lastPeriod) renderExpenseBreakdown(lastActualTx);
     if (pageId === "analytics") renderAnalyticsCharts();
-    if (pageId === "goals") { loadHoldings(); updateGrowthCalculator(); }
+    if (pageId === "goals") { loadHoldings(); updateGrowthCalculator(); loadGoals(); }
   }
   document.querySelectorAll(".nav-item").forEach(btn => {
     btn.addEventListener("click", () => showPage(btn.dataset.page));
@@ -1527,6 +1609,7 @@
       document.querySelectorAll(".goal-pane").forEach(x => x.classList.remove("active"));
       p.classList.add("active");
       document.getElementById(p.dataset.pane).classList.add("active");
+      if (p.dataset.pane === "goal-savings") loadGoals();
       if (p.dataset.pane === "goal-investments") { loadHoldings(); updateGrowthCalculator(); }
       if (p.dataset.pane === "goal-creator") { loadCreatorMetrics(); loadCreatorTargets(); }
     });
@@ -2690,9 +2773,10 @@
     const baseSelect = document.getElementById("baseCurrencySelect");
     const calcFrom = document.getElementById("calcFrom");
     const calcTo = document.getElementById("calcTo");
-    [txCurrency, baseSelect, calcFrom, calcTo].forEach(sel => sel.innerHTML = "");
+    const goalCurrency = document.getElementById("goalCurrency");
+    [txCurrency, baseSelect, calcFrom, calcTo, goalCurrency].forEach(sel => sel.innerHTML = "");
     CURRENCIES.forEach(c => {
-      [txCurrency, baseSelect, calcFrom, calcTo].forEach(sel => {
+      [txCurrency, baseSelect, calcFrom, calcTo, goalCurrency].forEach(sel => {
         const opt = document.createElement("option");
         opt.value = c; opt.textContent = c;
         sel.appendChild(opt);
@@ -3329,6 +3413,185 @@
     const d = document.getElementById("budEdit");
     d.open = true;
     d.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+
+  // ---------- Savings goals ----------
+  let goalsData = [];
+  let goalDraft = { id: null, emoji: "🎯", image: null };
+  const GOAL_EMOJIS = ["🎯", "🚗", "✈️", "🏖️", "🏠", "🛡️", "💍", "🎓", "💻", "📱", "🐶", "🎁", "🏋️", "👶", "📈", "☕"];
+
+  async function loadGoals() {
+    const list = document.getElementById("goalList");
+    const { data, error } = await supabaseClient.from("savings_goals").select("*").order("created_at", { ascending: true });
+    if (error) {
+      console.error(error);
+      list.innerHTML = `<div class="bud-empty">Goals need one more database step: run <b>add_savings_goals.sql</b> in the Supabase SQL Editor, then refresh.</div>`;
+      return;
+    }
+    goalsData = data || [];
+    renderGoals();
+  }
+
+  function goalPicStyle(g) {
+    return g.image_url ? `style="background-image:url('${g.image_url}'); font-size:0;"` : "";
+  }
+
+  function renderGoals() {
+    const list = document.getElementById("goalList");
+    if (goalsData.length === 0) {
+      list.innerHTML = `<div class="bud-empty">No goals yet — tap “+ Add Goal” to start your first one.</div>`;
+      return;
+    }
+    list.innerHTML = goalsData.map((g, i) => {
+      const saved = Number(g.saved_amount), target = Number(g.target_amount);
+      const pct = Math.min(100, (saved / target) * 100);
+      const done = saved >= target;
+      let hint = "";
+      if (done) hint = "🎉 Goal reached";
+      else if (g.target_date) {
+        const [y, m, d] = g.target_date.split("-").map(Number);
+        const due = new Date(y, m - 1, d);
+        const months = Math.max(1, Math.round((due - new Date()) / (30.44 * 86400000)));
+        const label = due.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+        hint = due < new Date() ? `Target date passed (${label})` : `By ${label} · ~${fmtOriginal((target - saved) / months, g.currency)}/mo`;
+      }
+      return `<div class="goal-card ${done ? "done" : ""}" style="animation-delay:${i * 60}ms" data-id="${g.id}">
+        <div class="goal-top">
+          <div><div class="goal-name">${escapeHtml(g.name)}</div><div class="goal-target num">${fmtOriginal(target, g.currency)}</div></div>
+          <div class="goal-pic" ${goalPicStyle(g)}>${g.image_url ? "" : (g.emoji || "🎯")}</div>
+        </div>
+        <div class="goal-bar-row"><span class="gb-amt num">${fmtOriginal(saved, g.currency)} / ${fmtOriginal(target, g.currency)}</span><span class="gb-pct num">${Math.round(pct)}%</span></div>
+        <div class="goal-track"><div class="goal-fill" data-w="${pct}"></div></div>
+        <div class="goal-foot"><span class="goal-hint">${hint}</span>
+          <span class="goal-btns"><button data-act="edit" data-id="${g.id}">Edit</button><button class="primary" data-act="funds" data-id="${g.id}">+ Add funds</button></span>
+        </div>
+      </div>`;
+    }).join("");
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      list.querySelectorAll(".goal-fill").forEach(el => { el.style.width = el.dataset.w + "%"; });
+    }));
+    list.querySelectorAll("button[data-act]").forEach(b => b.addEventListener("click", () => {
+      const g = goalsData.find(x => x.id === b.dataset.id);
+      if (!g) return;
+      b.dataset.act === "edit" ? openGoalSheet(g) : openFundsSheet(g);
+    }));
+  }
+
+  function paintGoalPreview() {
+    const p = document.getElementById("goalPicPreview");
+    if (goalDraft.image) { p.style.backgroundImage = `url('${goalDraft.image}')`; p.style.fontSize = "0"; p.textContent = ""; }
+    else { p.style.backgroundImage = ""; p.style.fontSize = ""; p.textContent = goalDraft.emoji; }
+    document.querySelectorAll("#goalEmojiRow button").forEach(b => b.classList.toggle("sel", !goalDraft.image && b.dataset.e === goalDraft.emoji));
+  }
+
+  function openGoalSheet(g) {
+    goalDraft = g ? { id: g.id, emoji: g.emoji || "🎯", image: g.image_url || null } : { id: null, emoji: "🎯", image: null };
+    document.getElementById("goalSheetTitle").textContent = g ? "Edit Goal" : "New Goal";
+    document.getElementById("goalName").value = g ? g.name : "";
+    document.getElementById("goalTarget").value = g ? g.target_amount : "";
+    document.getElementById("goalSaved").value = g ? g.saved_amount : "";
+    document.getElementById("goalDate").value = g && g.target_date ? g.target_date : "";
+    document.getElementById("goalCurrency").value = g ? g.currency : baseCurrency;
+    document.getElementById("goalDeleteBtn").style.display = g ? "block" : "none";
+    document.getElementById("goalMsg").textContent = "";
+    paintGoalPreview();
+    document.getElementById("goalSheet").classList.add("open");
+  }
+  function closeGoalSheet() { document.getElementById("goalSheet").classList.remove("open"); }
+
+  function openFundsSheet(g) {
+    document.getElementById("fundsSheet").dataset.id = g.id;
+    document.getElementById("fundsTitle").textContent = g.name;
+    document.getElementById("fundsSub").textContent = `Saved so far: ${fmtOriginal(Number(g.saved_amount), g.currency)} of ${fmtOriginal(Number(g.target_amount), g.currency)}`;
+    document.getElementById("fundsAmount").value = "";
+    document.getElementById("fundsSheet").classList.add("open");
+    setTimeout(() => document.getElementById("fundsAmount").focus(), 350);
+  }
+  function closeFundsSheet() { document.getElementById("fundsSheet").classList.remove("open"); }
+
+  // Resize a chosen photo to a small square so it stays tiny in the database
+  function photoToSquareDataURL(file, size = 200) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const s = Math.min(img.width, img.height);
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = size;
+          canvas.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById("goalEmojiRow").innerHTML = GOAL_EMOJIS.map(e => `<button type="button" data-e="${e}">${e}</button>`).join("");
+  document.getElementById("goalEmojiRow").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    goalDraft.emoji = b.dataset.e; goalDraft.image = null; paintGoalPreview();
+  }));
+  document.getElementById("goalPicUpload").addEventListener("click", () => document.getElementById("goalPicFile").click());
+  document.getElementById("goalPicFile").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try { goalDraft.image = await photoToSquareDataURL(f); paintGoalPreview(); }
+    catch (err) { const m = document.getElementById("goalMsg"); m.className = "form-msg error"; m.textContent = "Couldn't read that image — try another one."; }
+    e.target.value = "";
+  });
+  document.getElementById("goalPicRemove").addEventListener("click", () => { goalDraft.image = null; paintGoalPreview(); });
+  document.getElementById("goalAddBtn").addEventListener("click", () => openGoalSheet(null));
+  document.getElementById("goalSheetClose").addEventListener("click", closeGoalSheet);
+  document.getElementById("fundsClose").addEventListener("click", closeFundsSheet);
+  document.getElementById("goalSheet").addEventListener("click", (e) => { if (e.target.id === "goalSheet") closeGoalSheet(); });
+  document.getElementById("fundsSheet").addEventListener("click", (e) => { if (e.target.id === "fundsSheet") closeFundsSheet(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeGoalSheet(); closeFundsSheet(); } });
+
+  document.getElementById("goalForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("goalMsg");
+    msg.className = "form-msg";
+    const row = {
+      name: document.getElementById("goalName").value.trim(),
+      target_amount: parseFloat(document.getElementById("goalTarget").value),
+      saved_amount: Math.max(0, parseFloat(document.getElementById("goalSaved").value) || 0),
+      currency: document.getElementById("goalCurrency").value,
+      emoji: goalDraft.emoji, image_url: goalDraft.image,
+      target_date: document.getElementById("goalDate").value || null
+    };
+    if (!row.name || !(row.target_amount > 0)) { msg.className = "form-msg error"; msg.textContent = "Add a name and a target amount."; return; }
+    const q = goalDraft.id
+      ? supabaseClient.from("savings_goals").update(row).eq("id", goalDraft.id)
+      : supabaseClient.from("savings_goals").insert({ ...row, user_id: currentUser.id });
+    const { error } = await q;
+    if (error) { msg.className = "form-msg error"; msg.textContent = error.message; return; }
+    closeGoalSheet();
+    loadGoals();
+  });
+
+  document.getElementById("goalDeleteBtn").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    if (!btn.dataset.confirm) { btn.dataset.confirm = "1"; btn.textContent = "Tap again to delete for good"; setTimeout(() => { delete btn.dataset.confirm; btn.textContent = "Delete this goal"; }, 3000); return; }
+    delete btn.dataset.confirm; btn.textContent = "Delete this goal";
+    await supabaseClient.from("savings_goals").delete().eq("id", goalDraft.id);
+    closeGoalSheet();
+    loadGoals();
+  });
+
+  document.getElementById("fundsForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("fundsSheet").dataset.id;
+    const g = goalsData.find(x => x.id === id);
+    const delta = parseFloat(document.getElementById("fundsAmount").value);
+    if (!g || isNaN(delta)) return;
+    const next = Math.max(0, Number(g.saved_amount) + delta);
+    await supabaseClient.from("savings_goals").update({ saved_amount: next }).eq("id", id);
+    closeFundsSheet();
+    loadGoals();
   });
 
   function escapeHtml(str) {
