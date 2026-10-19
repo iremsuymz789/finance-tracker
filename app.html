@@ -1731,7 +1731,8 @@
     const iso = (d) => localISO(d);
     const daysAgo = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return d; };
     const cssVar = (name) => getComputedStyle(document.body).getPropertyValue(name).trim();
-    const C_INC = cssVar("--flow-income"), C_EXP = cssVar("--flow-expense"), C_SAV = cssVar("--flow-savings"), C_DEBT = cssVar("--debt"), COLOR_NEUTRAL = cssVar("--insight-neutral");
+    // var() references (not resolved values) so colors always follow the active theme, even before it has loaded
+    const C_INC = "var(--flow-income)", C_EXP = "var(--flow-expense)", C_SAV = "var(--flow-savings)", C_DEBT = "var(--debt)", COLOR_NEUTRAL = "var(--insight-neutral)";
 
     const { data: last60, error } = await supabaseClient
       .from("transactions").select("type, category, amount, currency, transaction_date")
