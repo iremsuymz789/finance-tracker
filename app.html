@@ -286,9 +286,10 @@
     width: 110px; filter: drop-shadow(0 6px 18px rgba(255,111,163,0.5));
     animation: kittyBob 1.8s ease-in-out infinite;
   }
-  #kittyMediaSlot video{
-    width: 150px; border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(255,111,163,0.5);
+  #kittyMediaSlot canvas{
+    width: 130px; height: auto;
+    filter: drop-shadow(0 6px 18px rgba(255,111,163,0.5));
+    animation: kittyBob 1.8s ease-in-out infinite;
   }
   @keyframes kittyBob{
     0%, 100%{ transform: translateY(0) rotate(-2deg); }
@@ -845,6 +846,26 @@
   .emoji-row button{ width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-size: 20px; cursor:pointer; }
   .emoji-row button.sel{ border-color: var(--savings); background: color-mix(in srgb, var(--savings) 18%, var(--bg)); }
   .goal-delete{ width:100%; margin-top: 10px; background:none; border: 1px solid var(--line); color: var(--flow-expense); border-radius: 10px; padding: 11px; font-family: inherit; font-size: 13px; cursor:pointer; }
+
+  /* ---------- creator stats / trend ---------- */
+  .cs-delta{ font-size: 11px; font-weight: 600; margin-left: 8px; color: var(--ink-faint); }
+  .cs-delta.up{ color: var(--flow-income); }
+  .cs-delta.down{ color: var(--flow-expense); }
+  .creator-stat-card.cs-total{ border-color: var(--savings); }
+  .trend-chip{ display:inline-block; font-size: 12.5px; font-weight: 600; border: 1px solid; border-radius: 14px; padding: 4px 12px; margin: 0 0 12px; font-family: 'IBM Plex Mono', monospace; }
+  /* ---------- investments ---------- */
+  .inv-months{ font-size: 12px; color: var(--ink-dim); margin: 14px 0 0; line-height: 1.5; }
+  .calc-mode-row{ display:flex; align-items:center; justify-content: space-between; gap: 10px; margin: -6px 0 6px; }
+  .calc-badge{ font-size: 12px; font-weight: 600; border-radius: 14px; padding: 5px 12px; border: 1px solid; }
+  .calc-badge.real{ color: var(--flow-income); border-color: var(--flow-income); }
+  .calc-badge.what-if{ color: var(--flow-savings); border-color: var(--flow-savings); }
+  .calc-basis{ font-size: 12.5px; color: var(--ink-dim); margin: 0 0 18px; line-height: 1.5; }
+  .calc-range{ font-size: 12.5px; color: var(--ink-dim); margin: 16px 0 0; line-height: 1.5; }
+  .calc-legend{ display:flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 11.5px; color: var(--ink-faint); }
+  .calc-legend i{ display:inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+  .calc-legend i.dash{ background: repeating-linear-gradient(90deg, var(--income) 0 4px, transparent 4px 7px); height: 2px; }
+  .calc-legend i.dash.gray{ background: repeating-linear-gradient(90deg, #6C766E 0 2px, transparent 2px 5px); }
+  .calc-note{ font-size: 11.5px; color: var(--ink-faint); margin: 14px 0 0; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -1063,13 +1084,25 @@
       </div>
 
       <div class="panel">
+        <h2>Your Investments</h2>
+        <div class="calc-stats">
+          <div class="calc-stat"><p class="t-label">Total Invested</p><p class="t-val num" id="invTotal" style="color: var(--savings);">$0.00</p></div>
+          <div class="calc-stat"><p class="t-label">This Month</p><p class="t-val num" id="invMonth">$0.00</p></div>
+          <div class="calc-stat"><p class="t-label">Average / Month</p><p class="t-val num" id="invAvg">$0.00</p></div>
+        </div>
+        <p class="inv-months" id="invMonths"></p>
+        <div id="invRecent" style="margin-top:14px;"></div>
+        <p style="font-size:11.5px; color: var(--ink-faint); margin-top:12px;">Every savings transaction with the category <b>Investment</b> or <b>Retirement</b> shows up here automatically. Add them from the Transactions tab.</p>
+      </div>
+
+      <div class="panel">
         <h2>Portfolio Breakdown</h2>
         <div id="holdingsContent">
           <div class="breakdown-grid" id="holdingsChartWrap" style="display:none;">
             <div class="breakdown-chart"><canvas id="holdingsDonutChart"></canvas><img src="hamster_wheel.webp" class="hamster-wheel-overlay" alt=""></div>
             <div class="breakdown-legend" id="holdingsLegend"></div>
           </div>
-          <p class="empty-state" id="holdingsEmpty">No holdings logged yet — add one below.</p>
+          <p class="empty-state" id="holdingsEmpty">No investments yet — log one as a transaction, or add a holding below.</p>
         </div>
         <form id="holdingForm" style="margin-top:18px;">
           <div class="form-row">
@@ -1085,7 +1118,11 @@
 
       <div class="panel" style="margin-bottom:0;">
         <h2>Investment Growth Calculator</h2>
-        <p style="font-size:12.5px; color: var(--ink-faint); margin: -10px 0 20px;">Play with the numbers to see how your money could grow if you kept this up.</p>
+        <div class="calc-mode-row">
+          <span class="calc-badge real" id="calcBadge">Using your real numbers</span>
+          <button type="button" class="bud-link" id="calcReset" style="display:none;">Reset to my real numbers</button>
+        </div>
+        <p class="calc-basis" id="calcBasis"></p>
 
         <div class="calc-inputs">
           <div class="form-row">
@@ -1116,7 +1153,10 @@
           <div class="calc-stat"><p class="t-label">Projected Balance</p><p class="t-val num" id="calcFinal" style="color: var(--savings); font-size:19px;">$0.00</p></div>
         </div>
 
-        <div class="chart-wrap" style="margin-top: 20px;"><canvas id="calcChart"></canvas></div>
+        <p class="calc-range" id="calcRange"></p>
+        <div class="chart-wrap" style="margin-top: 14px;"><canvas id="calcChart"></canvas></div>
+        <div class="calc-legend"><span><i style="background:var(--income);"></i>Projected</span><span><i class="dash"></i>Lower / higher returns</span><span><i class="dash gray"></i>Only what you put in</span></div>
+        <p class="calc-note">The default 7% a year is a rough long-term average for a diversified stock portfolio (after inflation). Real returns vary a lot and can be negative — treat this as an illustration, not a promise.</p>
       </div>
     </div>
     <div class="goal-pane" id="goal-habits">
@@ -1143,6 +1183,7 @@
             <select id="creatorChartMetric"></select>
           </div>
         </div>
+        <p id="creatorTrendChip" class="trend-chip" style="display:none;"></p>
         <div class="chart-wrap"><canvas id="creatorTrendChart"></canvas></div>
         <p class="empty-state" id="creatorTrendEmpty" style="display:none;">Log at least two snapshots with the same metric name to see a trend.</p>
       </div>
@@ -1406,6 +1447,7 @@
         <input type="number" id="fundsAmount" step="0.01" placeholder="0.00" required>
       </div></div>
       <button type="submit" class="submit-btn">Update progress</button>
+      <p class="form-msg" id="fundsMsg"></p>
     </form>
   </div>
 </div>
@@ -1517,7 +1559,9 @@
 <script>
   const EXPENSE_CATEGORIES = ["Housing", "Transport", "Food", "Leisure", "Healthcare", "Shopping", "Education", "Production Costs", "Miscellaneous"];
   const INCOME_CATEGORIES = ["Sponsorship", "Ad Revenue", "Affiliate", "Product Sales", "Freelance", "Other Income"];
-  const SAVINGS_CATEGORIES = ["Emergency Fund", "Investment", "Travel Fund", "Retirement", "Other Savings"];
+  const SAVINGS_CATEGORIES = ["Emergency Fund", "Investment", "Travel Fund", "Retirement", "Savings Goal", "Other Savings"];
+  const INVEST_CATEGORIES = ["Investment", "Retirement"];
+  const themeColor = (n) => getComputedStyle(document.body).getPropertyValue(n).trim();
   const DEBT_CATEGORIES = ["Credit Card", "Loan Payment", "Other Debt"];
   const CURRENCIES = ["USD", "EUR", "GBP", "TRY", "JPY", "CAD", "AUD", "INR"];
   const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£", TRY: "₺", JPY: "¥", CAD: "$", AUD: "$", INR: "₹" };
@@ -1679,11 +1723,46 @@
     } else if (kind === "loan") {
       slot.innerHTML = `<span class="kitty-sparkle" style="top:-6px; right:-10px;">✨</span><img src="wallet_cat.png" alt=""><span class="kitty-sparkle" style="bottom:-4px; left:-8px;">✨</span>`;
     } else if (kind === "income") {
-      slot.innerHTML = `<video src="income_video.mp4" autoplay muted loop playsinline></video>`;
+      slot.innerHTML = `<span class="kitty-sparkle" style="top:-6px; left:-10px;">✨</span><canvas id="kittyIncomeCanvas" width="280" height="378"></canvas><span class="kitty-sparkle" style="bottom:-4px; right:-8px;">✨</span>`;
+      startGreenScreenVideo(document.getElementById("kittyIncomeCanvas"));
     } else {
       return;
     }
     slot.classList.add("visible");
+  }
+
+  // The income clip was filmed on a green screen. Instead of showing the green box, each frame is
+  // drawn to a canvas with the green made transparent, so only the cat and the money remain.
+  function startGreenScreenVideo(canvas) {
+    const video = document.createElement("video");
+    video.src = "income_video.mp4";
+    video.muted = true; video.loop = true; video.playsInline = true; video.autoplay = true;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const W = canvas.width, H = canvas.height;
+    // crop to the cat (the clip has a lot of empty green around it)
+    const crop = { x: 120, y: 120, w: 450, h: 607 };
+    const draw = () => {
+      if (!canvas.isConnected) { video.pause(); video.removeAttribute("src"); video.load(); return; }
+      if (video.readyState >= 2) {
+        ctx.drawImage(video, crop.x, crop.y, crop.w, crop.h, 0, 0, W, H);
+        const img = ctx.getImageData(0, 0, W, H), d = img.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i], g = d[i + 1], b = d[i + 2];
+          const green = g - Math.max(r, b);
+          if (green > 70) { d[i + 3] = 0; }
+          else if (green > 25) {
+            d[i + 3] = Math.round(255 * (1 - (green - 25) / 45));
+            d[i + 1] = Math.max(r, b);          // remove the green tint left on the edges
+          } else if (green > 8) {
+            d[i + 1] = Math.max(r, b) + 4;      // faint spill on fur near the edge
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+      }
+      requestAnimationFrame(draw);
+    };
+    video.play().catch(() => {});
+    requestAnimationFrame(draw);
   }
 
   function hideKittyMedia() {
@@ -1732,8 +1811,9 @@
     document.getElementById("calcTo").addEventListener("change", updateCalculator);
     document.getElementById("holdingForm").addEventListener("submit", addHolding);
     ["calcInitial", "calcMonthly", "calcRate", "calcYears"].forEach(id => {
-      document.getElementById(id).addEventListener("input", updateGrowthCalculator);
+      document.getElementById(id).addEventListener("input", () => { calcHypothetical = true; updateGrowthCalculator(); });
     });
+    document.getElementById("calcReset").addEventListener("click", applyRealToCalculator);
     document.getElementById("brandHome").addEventListener("click", () => showPage("dashboard"));
     document.getElementById("onboardingForm").addEventListener("submit", saveOnboarding);
     document.getElementById("creatorMetricForm").addEventListener("submit", addCreatorMetric);
@@ -2074,13 +2154,16 @@
     if (error) { console.error(error); return; }
     const total = (data || []).reduce((sum, t) => sum + toBase(Number(t.amount), t.currency || "USD"), 0);
     document.getElementById("totalSavedValue").textContent = fmt(total);
+    loadInvestmentStats();
   }
 
   // ---------- Holdings ----------
   async function loadHoldings() {
     const { data, error } = await supabaseClient.from("holdings").select("*").order("created_at", { ascending: false });
     if (error) { console.error(error); return; }
+    invReal.holdings = (data || []).reduce((a, h) => a + toBase(Number(h.amount), h.currency || "USD"), 0);
     renderHoldings(data || []);
+    if (invReal.loaded && !calcHypothetical) applyRealToCalculator();
   }
 
   function renderHoldings(holdings) {
@@ -2090,7 +2173,7 @@
     const list = document.getElementById("holdingsList");
     list.innerHTML = "";
 
-    if (holdings.length === 0) {
+    if (holdings.length === 0 && investTxGroups.length === 0) {
       chartWrap.style.display = "none";
       empty.style.display = "block";
       if (holdingsChart) { holdingsChart.destroy(); holdingsChart = null; }
@@ -2099,12 +2182,20 @@
     chartWrap.style.display = "grid";
     empty.style.display = "none";
 
-    const converted = holdings.map((h, i) => ({
-      name: h.name,
-      amount: toBase(Number(h.amount), h.currency || "USD"),
-      color: HOLDING_COLORS[i % HOLDING_COLORS.length],
-      id: h.id, original: h.amount, currency: h.currency
-    })).sort((a, b) => b.amount - a.amount);
+    // manual holdings + investment transactions (grouped by name), merged when the names match
+    const mergedMap = {};
+    holdings.forEach(h => {
+      const k = h.name.trim().toLowerCase();
+      const e = mergedMap[k] = mergedMap[k] || { name: h.name, amount: 0 };
+      e.amount += toBase(Number(h.amount), h.currency || "USD");
+    });
+    investTxGroups.forEach(g => {
+      const k = g.name.trim().toLowerCase();
+      const e = mergedMap[k] = mergedMap[k] || { name: g.name, amount: 0 };
+      e.amount += g.amount;
+    });
+    const converted = Object.values(mergedMap).sort((a, b) => b.amount - a.amount)
+      .map((h, i) => ({ ...h, color: HOLDING_COLORS[i % HOLDING_COLORS.length] }));
     const grandTotal = converted.reduce((a, b) => a + b.amount, 0);
 
     legend.innerHTML = "";
@@ -2124,6 +2215,12 @@
       options: { responsive: true, maintainAspectRatio: false, resizeDelay: 1300, cutout: "68%", animation: { animateScale: false, animateRotate: true, duration: 1100, easing: "easeOutQuart" }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.label}: ${fmt(item.parsed)}` } } } }
     });
 
+    if (investTxGroups.length) {
+      const note = document.createElement("p");
+      note.style.cssText = "font-size:11.5px; color: var(--ink-faint); margin: 0 0 8px;";
+      note.textContent = "The chart includes your investment transactions (grouped by description) plus the holdings listed below.";
+      list.appendChild(note);
+    }
     holdings.forEach(h => {
       const row = document.createElement("div");
       row.className = "holding-row";
@@ -2266,21 +2363,48 @@
     if (metrics.length === 0) { empty.style.display = "block"; return; }
     empty.style.display = "none";
 
-    const latestByPlatform = {};
-    metrics.forEach(m => {
-      if (!latestByPlatform[m.platform] || m.snapshot_date > latestByPlatform[m.platform].snapshot_date) {
-        latestByPlatform[m.platform] = m;
-      }
+    // platform -> metric key -> [{label, value, date}] newest first, built from EVERY snapshot
+    const byPlatform = {};
+    [...metrics].sort((x, y) => y.snapshot_date.localeCompare(x.snapshot_date)).forEach(m => {
+      const p = byPlatform[m.platform] = byPlatform[m.platform] || { latestDate: m.snapshot_date, metrics: {} };
+      metricSlots(m).forEach(s => {
+        const key = s.label.trim().toLowerCase();
+        (p.metrics[key] = p.metrics[key] || []).push({ label: s.label.trim(), value: s.value, date: m.snapshot_date });
+      });
     });
 
-    Object.values(latestByPlatform).forEach(m => {
-      const slots = metricSlots(m);
+    const deltaHtml = (hist) => {
+      if (hist.length < 2) return "";
+      const diff = hist[0].value - hist[1].value;
+      if (diff === 0) return `<span class="cs-delta">±0</span>`;
+      const up = diff > 0;
+      return `<span class="cs-delta ${up ? "up" : "down"}">${up ? "▲" : "▼"} ${formatMetricValue(Math.abs(diff))}</span>`;
+    };
+    const isRate = (key) => /rate|%|percent/.test(key);
+
+    // All-platforms totals: sum of each metric's latest value (rates are averaged)
+    const totals = {};
+    Object.values(byPlatform).forEach(p => Object.entries(p.metrics).forEach(([key, hist]) => {
+      const t = totals[key] = totals[key] || { label: hist[0].label, sum: 0, n: 0 };
+      t.sum += hist[0].value; t.n++;
+    }));
+    const platformCount = Object.keys(byPlatform).length;
+    if (platformCount > 1) {
+      const card = document.createElement("div");
+      card.className = "creator-stat-card cs-total";
+      card.innerHTML = `<p class="cs-platform">All platforms</p>` +
+        Object.entries(totals).map(([key, t]) => `<div class="cs-row"><span>${isRate(key) ? "Avg " : "Total "}${escapeHtml(t.label)}</span><b>${formatMetricValue(isRate(key) ? t.sum / t.n : t.sum)}</b></div>`).join("") +
+        `<p class="cs-date">combined latest numbers</p>`;
+      container.appendChild(card);
+    }
+
+    Object.entries(byPlatform).forEach(([platform, p]) => {
       const card = document.createElement("div");
       card.className = "creator-stat-card";
       card.innerHTML = `
-        <p class="cs-platform">${escapeHtml(m.platform)}</p>
-        ${slots.map(s => `<div class="cs-row"><span>${escapeHtml(s.label)}</span><b>${formatMetricValue(s.value)}</b></div>`).join("")}
-        <p class="cs-date">as of ${m.snapshot_date}</p>
+        <p class="cs-platform">${escapeHtml(platform)}</p>
+        ${Object.values(p.metrics).map(hist => `<div class="cs-row" title="as of ${hist[0].date}"><span>${escapeHtml(hist[0].label)}</span><b>${formatMetricValue(hist[0].value)}${deltaHtml(hist)}</b></div>`).join("")}
+        <p class="cs-date">latest as of ${p.latestDate}</p>
       `;
       container.appendChild(card);
     });
@@ -2332,6 +2456,7 @@
       if (creatorTrendChart) { creatorTrendChart.destroy(); creatorTrendChart = null; }
       canvas.style.display = "none";
       emptyMsg.style.display = "block";
+      document.getElementById("creatorTrendChip").style.display = "none";
       return;
     }
     canvas.style.display = "block";
@@ -2340,6 +2465,16 @@
     const labels = filtered.map(f => f.date);
     const values = filtered.map(f => f.value);
     const pointDelay = 1500 / values.length;
+    const colUp = themeColor("--flow-income") || "#8FBF6F", colDown = themeColor("--flow-expense") || "#E0786A";
+    const first = values[0], last = values[values.length - 1];
+    const overallUp = last >= first;
+    const overallCol = overallUp ? colUp : colDown;
+    const chip = document.getElementById("creatorTrendChip");
+    const pctTxt = first !== 0 ? ` (${overallUp ? "+" : "−"}${Math.abs(((last - first) / Math.abs(first)) * 100).toFixed(1)}%)` : "";
+    chip.style.display = "inline-block";
+    chip.style.color = overallCol;
+    chip.style.borderColor = overallCol;
+    chip.textContent = `${overallUp ? "▲" : "▼"} ${formatMetricValue(first)} → ${formatMetricValue(last)}${pctTxt}`;
     const previousY = (ctx2) => ctx2.index === 0
       ? ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0])
       : ctx2.chart.getDatasetMeta(ctx2.datasetIndex).data[ctx2.index - 1].getProps(["y"], true).y;
@@ -2347,7 +2482,8 @@
     if (creatorTrendChart) creatorTrendChart.destroy();
     creatorTrendChart = new Chart(canvas.getContext("2d"), {
       type: "line",
-      data: { labels, datasets: [{ label: metricLabel, data: values, borderColor: "#E8B84B", backgroundColor: "#E8B84B22", fill: true, tension: 0.25, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
+      data: { labels, datasets: [{ label: metricLabel, data: values, borderColor: overallCol, backgroundColor: overallCol + "22", fill: true, tension: 0.25, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2,
+        segment: { borderColor: (sc) => sc.p1.parsed.y >= sc.p0.parsed.y ? colUp : colDown } }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         animation: {
@@ -2560,57 +2696,141 @@
   // ---------- Growth calculator ----------
 
   // ---------- Growth calculator ----------
+  // ---- Real investment data (from transactions + manual holdings) ----
+  const GENERAL_RETURN_PCT = 7;
+  let invReal = { total: 0, holdings: 0, thisMonth: 0, avg: 0, avgMonths: [], loaded: false };
+  let calcHypothetical = false;
+  let investTxGroups = [];
+
+  async function loadInvestmentStats() {
+    const { data, error } = await supabaseClient.from("transactions")
+      .select("id, category, description, amount, currency, transaction_date")
+      .eq("type", "savings").eq("status", "actual")
+      .order("transaction_date", { ascending: false });
+    if (error) { console.error(error); return; }
+    const inv = (data || []).filter(t => INVEST_CATEGORIES.includes(t.category));
+    const monthKey = (iso) => iso.slice(0, 7);
+    const now = new Date();
+    const curKey = monthKey(localISO(now));
+    const byMonth = {};
+    let total = 0;
+    inv.forEach(t => {
+      const amt = toBase(Number(t.amount), t.currency || "USD");
+      total += amt;
+      byMonth[monthKey(t.transaction_date)] = (byMonth[monthKey(t.transaction_date)] || 0) + amt;
+    });
+    // average of the last 3 completed months (zeros count), starting from the first month you invested
+    const keys = Object.keys(byMonth).sort();
+    const completed = [];
+    if (keys.length) {
+      let [y, m] = keys[0].split("-").map(Number);
+      const [cy, cm] = curKey.split("-").map(Number);
+      while (y < cy || (y === cy && m < cm)) {
+        const k = `${y}-${String(m).padStart(2, "0")}`;
+        completed.push({ key: k, value: byMonth[k] || 0 });
+        m++; if (m > 12) { m = 1; y++; }
+      }
+    }
+    const window3 = completed.slice(-3);
+    const thisMonth = byMonth[curKey] || 0;
+    const avg = window3.length ? window3.reduce((a, b) => a + b.value, 0) / window3.length : thisMonth;
+
+    // group by name for the portfolio donut
+    const groups = {};
+    inv.forEach(t => {
+      const name = (t.description && t.description.trim()) || t.category;
+      const g = groups[name.toLowerCase()] = groups[name.toLowerCase()] || { name, amount: 0 };
+      g.amount += toBase(Number(t.amount), t.currency || "USD");
+    });
+    investTxGroups = Object.values(groups);
+
+    const { data: hs } = await supabaseClient.from("holdings").select("amount, currency");
+    const holdingsTotal = (hs || []).reduce((a, h) => a + toBase(Number(h.amount), h.currency || "USD"), 0);
+
+    invReal = { total, holdings: holdingsTotal, thisMonth, avg, avgMonths: window3, loaded: true, recent: inv.slice(0, 5) };
+    renderInvestmentStats();
+    loadHoldings();
+  }
+
+  function renderInvestmentStats() {
+    document.getElementById("invTotal").textContent = fmt(invReal.total);
+    document.getElementById("invMonth").textContent = fmt(invReal.thisMonth);
+    document.getElementById("invAvg").textContent = fmt(invReal.avg);
+    const mName = (k) => { const [y, m] = k.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "short" }); };
+    document.getElementById("invMonths").textContent = invReal.avgMonths.length
+      ? `Last ${invReal.avgMonths.length} month${invReal.avgMonths.length > 1 ? "s" : ""}: ` + invReal.avgMonths.map(x => `${mName(x.key)} ${fmt(x.value)}`).join(" · ") + ` → about ${fmt(invReal.avg)} a month`
+      : (invReal.thisMonth > 0 ? "Only this month so far — once a month has passed, your monthly trend will show here." : "No investments logged yet.");
+    const recent = document.getElementById("invRecent");
+    recent.innerHTML = (invReal.recent || []).map(t => `<div class="txf-row t-savings" style="margin-bottom:6px;"><div class="txf-icon">↗</div><div class="txf-main"><div class="txf-title">${escapeHtml(t.description || t.category)}</div><div class="txf-sub">${t.category} · ${t.transaction_date}</div></div><div class="txf-right"><span class="txf-amt num">${fmtOriginal(Number(t.amount), t.currency || "USD")}</span></div></div>`).join("");
+  }
+
+  function applyRealToCalculator() {
+    document.getElementById("calcInitial").value = Math.round((invReal.total + invReal.holdings) * 100) / 100;
+    document.getElementById("calcMonthly").value = Math.round(invReal.avg * 100) / 100;
+    document.getElementById("calcRate").value = GENERAL_RETURN_PCT;
+    document.getElementById("calcYears").value = 10;
+    calcHypothetical = false;
+    updateGrowthCalculator();
+  }
+
   function updateGrowthCalculator() {
     const initial = parseFloat(document.getElementById("calcInitial").value) || 0;
     const monthly = parseFloat(document.getElementById("calcMonthly").value) || 0;
     const ratePct = parseFloat(document.getElementById("calcRate").value) || 0;
     const years = Math.max(1, parseInt(document.getElementById("calcYears").value) || 1);
 
-    const monthlyRate = ratePct / 100 / 12;
-    const totalMonths = years * 12;
-    let balance = initial;
-    let contributed = initial;
-    const labels = [0];
-    const balances = [Number(balance.toFixed(2))];
+    const badge = document.getElementById("calcBadge");
+    badge.textContent = calcHypothetical ? "Hypothetical — what if?" : "Using your real numbers";
+    badge.className = "calc-badge " + (calcHypothetical ? "what-if" : "real");
+    document.getElementById("calcReset").style.display = calcHypothetical ? "inline" : "none";
+    document.getElementById("calcBasis").textContent = calcHypothetical
+      ? "You've changed the numbers below to see a what-if. Your real data is untouched."
+      : (invReal.loaded && (invReal.total + invReal.holdings > 0 || invReal.avg > 0)
+        ? `Starting from ${fmt(invReal.total + invReal.holdings)} invested so far, adding about ${fmt(invReal.avg)} a month (your recent average), at ${GENERAL_RETURN_PCT}% a year. Change any number to try a what-if.`
+        : "No investments logged yet — add a savings transaction with the category Investment, or just try numbers below.");
 
-    for (let m = 1; m <= totalMonths; m++) {
-      balance = balance * (1 + monthlyRate) + monthly;
-      contributed += monthly;
-      if (m % 12 === 0) {
-        labels.push(m / 12);
-        balances.push(Number(balance.toFixed(2)));
+    const project = (rate) => {
+      const mr = rate / 100 / 12;
+      let bal = initial, contributed = initial;
+      const balances = [Number(bal.toFixed(2))], contribs = [Number(contributed.toFixed(2))];
+      for (let m = 1; m <= years * 12; m++) {
+        bal = bal * (1 + mr) + monthly;
+        contributed += monthly;
+        if (m % 12 === 0) { balances.push(Number(bal.toFixed(2))); contribs.push(Number(contributed.toFixed(2))); }
       }
-    }
+      return { bal, contributed, balances, contribs };
+    };
+    const main = project(ratePct), low = project(Math.max(0, ratePct - 3)), high = project(ratePct + 3);
+    const labels = main.balances.map((_, i) => "Yr " + i);
 
-    const growth = balance - contributed;
-    document.getElementById("calcContributed").textContent = fmt(contributed);
-    document.getElementById("calcGrowth").textContent = fmt(growth);
-    document.getElementById("calcFinal").textContent = fmt(balance);
+    document.getElementById("calcContributed").textContent = fmt(main.contributed);
+    document.getElementById("calcGrowth").textContent = fmt(main.bal - main.contributed);
+    document.getElementById("calcFinal").textContent = fmt(main.bal);
+    document.getElementById("calcRange").textContent = `In ${years} years: about ${fmt(low.bal)} if returns are 3 points lower, ${fmt(high.bal)} if 3 points higher.`;
 
     const ctx = document.getElementById("calcChart").getContext("2d");
     if (calcChart) calcChart.destroy();
-    const calcPointDelay = balances.length > 1 ? 1700 / balances.length : 0;
+    const calcPointDelay = main.balances.length > 1 ? 1700 / main.balances.length : 0;
     const calcPreviousY = (ctx2) => ctx2.index === 0
-      ? ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[0].data[0])
+      ? ctx2.chart.scales.y.getPixelForValue(ctx2.chart.data.datasets[ctx2.datasetIndex].data[0])
       : ctx2.chart.getDatasetMeta(ctx2.datasetIndex).data[ctx2.index - 1].getProps(["y"], true).y;
+    const green = themeColor("--flow-income") || "#8FBF6F";
+    const line = (label, data, extra) => ({ label, data, tension: 0.2, pointRadius: 0, pointHoverRadius: 4, borderWidth: 2, fill: false, ...extra });
     calcChart = new Chart(ctx, {
       type: "line",
-      data: { labels: labels.map(y => "Yr " + y), datasets: [{ label: "Balance", data: balances, borderColor: "#8FBF6F", backgroundColor: "#8FBF6F22", fill: true, tension: 0.2, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
+      data: { labels, datasets: [
+        line("Projected", main.balances, { borderColor: green, backgroundColor: green + "22", fill: true, borderWidth: 2.5 }),
+        line("Lower returns", low.balances, { borderColor: green + "88", borderDash: [5, 4], borderWidth: 1.2 }),
+        line("Higher returns", high.balances, { borderColor: green + "88", borderDash: [5, 4], borderWidth: 1.2 }),
+        line("What you put in", main.contribs, { borderColor: "#6C766E", borderDash: [2, 4], borderWidth: 1.4 })
+      ] },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false, resizeDelay: 1900,
         animation: {
-          x: {
-            type: "number", easing: "linear", duration: calcPointDelay,
-            from: NaN,
-            delay(ctx2) { if (ctx2.type !== "data" || ctx2.xStarted) return 0; ctx2.xStarted = true; return ctx2.index * calcPointDelay; }
-          },
-          y: {
-            type: "number", easing: "linear", duration: calcPointDelay,
-            from: calcPreviousY,
-            delay(ctx2) { if (ctx2.type !== "data" || ctx2.yStarted) return 0; ctx2.yStarted = true; return ctx2.index * calcPointDelay; }
-          }
+          x: { type: "number", easing: "linear", duration: calcPointDelay, from: NaN, delay(ctx2) { if (ctx2.type !== "data" || ctx2.xStarted) return 0; ctx2.xStarted = true; return ctx2.index * calcPointDelay; } },
+          y: { type: "number", easing: "linear", duration: calcPointDelay, from: calcPreviousY, delay(ctx2) { if (ctx2.type !== "data" || ctx2.yStarted) return 0; ctx2.yStarted = true; return ctx2.index * calcPointDelay; } }
         },
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => fmt(item.parsed.y) } } },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item) => `${item.dataset.label}: ${fmt(item.parsed.y)}` } } },
         scales: {
           x: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 } } },
           y: { grid: { color: "rgba(237,232,222,0.06)" }, ticks: { color: "#6C766E", font: { family: "IBM Plex Mono", size: 10 }, callback: (val) => (CURRENCY_SYMBOLS[baseCurrency] || "$") + val.toLocaleString() } }
@@ -3503,8 +3723,9 @@
   function openFundsSheet(g) {
     document.getElementById("fundsSheet").dataset.id = g.id;
     document.getElementById("fundsTitle").textContent = g.name;
-    document.getElementById("fundsSub").textContent = `Saved so far: ${fmtOriginal(Number(g.saved_amount), g.currency)} of ${fmtOriginal(Number(g.target_amount), g.currency)}`;
+    document.getElementById("fundsSub").textContent = `Saved so far: ${fmtOriginal(Number(g.saved_amount), g.currency)} of ${fmtOriginal(Number(g.target_amount), g.currency)}. Added money is also logged as a savings transaction.`;
     document.getElementById("fundsAmount").value = "";
+    document.getElementById("fundsMsg").textContent = "";
     document.getElementById("fundsSheet").classList.add("open");
     setTimeout(() => document.getElementById("fundsAmount").focus(), 350);
   }
@@ -3588,10 +3809,24 @@
     const g = goalsData.find(x => x.id === id);
     const delta = parseFloat(document.getElementById("fundsAmount").value);
     if (!g || isNaN(delta)) return;
+    if (delta === 0) return;
+    const fMsg = document.getElementById("fundsMsg");
+    fMsg.className = "form-msg";
+    // Money moving into/out of a goal is real money movement, so it is logged as a transaction too
+    const txRow = delta > 0
+      ? { type: "savings", category: "Savings Goal", description: g.name }
+      : { type: "income", category: "Other Income", description: `Withdrawn from ${g.name}` };
+    const { error: txErr } = await supabaseClient.from("transactions").insert({
+      ...txRow, user_id: currentUser.id, amount: Math.abs(delta), currency: g.currency,
+      transaction_date: todayISO(), status: "actual", is_fixed: false
+    });
+    if (txErr) { fMsg.className = "form-msg error"; fMsg.textContent = txErr.message; return; }
     const next = Math.max(0, Number(g.saved_amount) + delta);
     await supabaseClient.from("savings_goals").update({ saved_amount: next }).eq("id", id);
     closeFundsSheet();
     loadGoals();
+    loadDashboard();
+    loadTotalSaved();
   });
 
   function escapeHtml(str) {
