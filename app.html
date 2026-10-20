@@ -2077,18 +2077,27 @@
       const thisMonthTx2 = last60.filter(t => t.transaction_date >= monthStart2);
       const kittyExtras = [];
 
-      const bigExpense = thisMonthTx2
+      const monthExpenses = thisMonthTx2
         .filter(t => t.type === "expense")
         .map(t => ({ ...t, baseAmt: toBase(Number(t.amount), t.currency || "USD") }))
-        .sort((a, b) => b.baseAmt - a.baseAmt)[0];
-      if (bigExpense && bigExpense.baseAmt > 500) {
-        kittyExtras.push({ color: C_EXP, text: `Your ${bigExpense.category} expense of ${fmt(bigExpense.baseAmt)} was over $500 this month.`, media: "bigExpense" });
+        .sort((a, b) => b.baseAmt - a.baseAmt);
+      const bigExpense = monthExpenses[0];
+      const monthIncome = sumIn(thisMonthTx2, t => t.type === "income");
+      const monthSpent = monthExpenses.reduce((a, t) => a + t.baseAmt, 0);
+      // "Big" is relative to your own month (not a fixed $500, which means nothing in other currencies)
+      const isBig = bigExpense && (bigExpense.baseAmt >= 500
+        || (monthIncome > 0 && bigExpense.baseAmt >= monthIncome * 0.25)
+        || (monthExpenses.length >= 2 && bigExpense.baseAmt >= monthSpent * 0.4));
+      if (isBig) {
+        kittyExtras.push({ color: C_EXP, text: `Ouch — your biggest expense this month was ${bigExpense.category}: ${fmt(bigExpense.baseAmt)}.`, media: "bigExpense" });
       }
 
       const hasLoan = thisMonthTx2.some(t => t.type === "debt");
       if (hasLoan) {
         const loanTotal = sumIn(thisMonthTx2, t => t.type === "debt");
         kittyExtras.push({ color: C_DEBT, text: `You've made ${fmt(loanTotal)} in debt payments this month.`, media: "loan" });
+      } else if (monthIncome > 0 && monthSpent > monthIncome) {
+        kittyExtras.push({ color: C_EXP, text: `You've spent ${fmt(monthSpent - monthIncome)} more than you've earned this month.`, media: "loan" });
       }
 
       const incomeThisMonth = sumIn(thisMonthTx2, t => t.type === "income");
